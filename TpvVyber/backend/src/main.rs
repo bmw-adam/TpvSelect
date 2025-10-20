@@ -11,7 +11,6 @@ use oauth2::reqwest::async_http_client;
 use std::env;
 
 use diesel::prelude::*;
-use diesel::sqlite::SqliteConnection;
 use dotenvy::dotenv;
 
 #[get("/auth/google")]
@@ -80,13 +79,13 @@ async fn manual_hello() -> impl Responder {
     HttpResponse::Ok().body("Hey there!")
 }
 
-pub fn establish_connection() -> SqliteConnection {
-    dotenv().ok();
+// pub fn establish_connection() -> SqliteConnection {
+//     dotenv().ok();
 
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    SqliteConnection::establish(&database_url)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
-}
+//     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+//     SqliteConnection::establish(&database_url)
+//         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+// }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -95,7 +94,7 @@ async fn main() -> std::io::Result<()> {
     let cert_path = env::var("TLS_CRT").expect("TLS_CRT environment variable not set");
     let dist_path = env::var("DIST_DIR_PATH").expect("DIST_DIR_PATH environment variable not set");
 
-    let connection = establish_connection();
+    // let connection = establish_connection();
 
     // Set up TLS
     let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
