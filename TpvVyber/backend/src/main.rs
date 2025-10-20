@@ -91,9 +91,9 @@ pub fn establish_connection() -> SqliteConnection {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // Load and validate environment variables at the top
-    let key_path = env::var("KEY").expect("KEY environment variable not set");
-    let cert_path = env::var("CERT").expect("CERT environment variable not set");
-    let dist_path = env::var("DIST").expect("DIST environment variable not set");
+    let key_path = env::var("TLS_KEY").expect("TLS_KEY environment variable not set");
+    let cert_path = env::var("TLS_CRT").expect("TLS_CRT environment variable not set");
+    let dist_path = env::var("DIST_DIR_PATH").expect("DIST_DIR_PATH environment variable not set");
 
     let connection = establish_connection();
 
