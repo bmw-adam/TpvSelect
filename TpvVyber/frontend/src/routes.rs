@@ -20,6 +20,6 @@ pub fn switch(route: Route) -> Html {
   match route {
       Route::Home => html! { <MainLayout><Index /></MainLayout> },
       Route::Counter => html! { <h1>{ "Counter Page" }</h1> },
-      Route::NotFound => html! { <h1>{ "404" }</h1> },
+      Route::NotFound => html! { <MainLayout><h1>{ "Stránka neexistuje :(" }</h1></MainLayout> },
   }
 }
