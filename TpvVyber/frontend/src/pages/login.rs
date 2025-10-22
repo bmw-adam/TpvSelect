@@ -16,11 +16,11 @@ fn google_login() -> Html {
     }
 }
 
-#[function_component(Index)]
-pub fn index() -> Html {
+#[function_component(Login)]
+pub fn login() -> Html {
   html! {
     <>
-      <h1>{"Index!"}</h1>
+      <h1>{"Login!"}</h1>
       <GoogleLogin />
     </>
   }
