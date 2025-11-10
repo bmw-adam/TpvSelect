@@ -90,16 +90,16 @@ async fn manual_hello() -> impl Responder {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // Load and validate environment variables at the top
-    let key_path = env::var("TLS_KEY").expect("TLS_KEY environment variable not set");
-    let cert_path = env::var("TLS_CRT").expect("TLS_CRT environment variable not set");
+    let key = env::var("TLS_KEY").expect("TLS_KEY environment variable not set");
+    let cert = env::var("TLS_CRT").expect("TLS_CRT environment variable not set");
     let dist_path = env::var("DIST_DIR_PATH").expect("DIST_DIR_PATH environment variable not set");
 
     // let connection = establish_connection();
 
     // Set up TLS
     let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
-    builder.set_private_key_file(&key_path, SslFiletype::PEM).unwrap();
-    builder.set_certificate_chain_file(&cert_path).unwrap();
+    builder.set_private_key(&key, SslFiletype::PEM).unwrap();
+    builder.set_certificate_chain(&cert).unwrap();
 
     // Start server
     HttpServer::new(move || {
