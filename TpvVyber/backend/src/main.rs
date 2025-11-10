@@ -98,8 +98,8 @@ async fn main() -> std::io::Result<()> {
 
     // Set up TLS
     let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
-    builder.set_private_key(&key, SslFiletype::PEM).unwrap();
-    builder.set_certificate_chain(&cert).unwrap();
+    builder.set_private_key_file(&key, SslFiletype::PEM).unwrap();
+    builder.set_certificate_chain_file(&cert).unwrap();
 
     // Start server
     HttpServer::new(move || {
