@@ -5,17 +5,17 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     rust-overlay.url = "github:oxalica/rust-overlay";
-    tpv-frontend-vendor = {
-      url = "github:bmw-adam/tpvselect-frontend-vendor";
-      flake = false;
-    };
-    tpv-backend-vendor = {
-      url = "github:bmw-adam/tpvselect-backend-vendor";
-      flake = false;
-    };
+    # tpv-frontend-vendor = {
+    #   url = "github:bmw-adam/tpvselect-frontend-vendor";
+    #   flake = false;
+    # };
+    # tpv-backend-vendor = {
+    #   url = "github:bmw-adam/tpvselect-backend-vendor";
+    #   flake = false;
+    # };
   };
 
-  outputs = { self, nixpkgs, flake-utils, rust-overlay, tpv-frontend-vendor, tpv-backend-vendor, ... }:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay, ... }: # tpv-frontend-vendor, tpv-backend-vendor
     flake-utils.lib.eachDefaultSystem (system:
       let
         overlays = [ rust-overlay.overlays.default ];
@@ -48,8 +48,9 @@
           } ''
             mkdir -p $out
             cp -r ${./TpvVyber/frontend}/* $out/
-            cp -r ${tpv-frontend-vendor}/vendor $out/vendor
           '';
+            # cp -r ${tpv-frontend-vendor}/vendor $out/vendor
+
           cargoVendorDir = "vendor";
           nativeBuildInputs = [ pkgs.trunk rustWasmToolchain pkgs.rustc pkgs.llvmPackages_20.lld pkgs.wasm-bindgen-cli_0_2_100 ];
           buildInputs = [ pkgs.wasm-bindgen-cli_0_2_104 ];
@@ -118,8 +119,8 @@
           } ''
             mkdir -p $out
             cp -rf ${./TpvVyber/backend}/* $out/
-            cp -rf ${tpv-backend-vendor}/vendor $out/vendor
           '';
+            # cp -rf ${tpv-backend-vendor}/vendor $out/vendor
 
           cargoLock.lockFile = ./TpvVyber/backend/Cargo.lock;
           buildInputs = [ tpv-vyber-wasm pkgs.sqlite ];

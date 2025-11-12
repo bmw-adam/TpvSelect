@@ -1,0 +1,65 @@
+version: "3.9"
+
+services:
+
+  keycloak:
+    image: docker.io/bitnami/keycloak:23.0.7
+    environment:
+      - KEYCLOAK_DATABASE_VENDOR=dev-file
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin123456
+      - KEYCLOAK_ENABLE_HEALTH_ENDPOINTS=true
+      - KEYCLOAK_CACHE_TYPE=local
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health/ready" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  init_keycloak:
+    image: docker.io/bitnami/keycloak:23.0.7
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    entrypoint: /usr/bin/bash
+    environment:
+      - KCADM_PATH=/opt/bitnami/keycloak/bin/kcadm.sh
+      - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin123456
+      - REALM=master
+
+    command:
+      - -exc
+      - |
+        # wait until keycloak is ready
+        while ! curl -sf "$$KEYCLOAK_URL" --output /dev/null; do
+          echo "Waiting for Keycloak to start up..."
+          sleep 5
+        done
+        
+        echo "Keycloak ready"
+        
+        kcadm() { local cmd="$$1" ; shift ; "$$KCADM_PATH" "$$cmd" --config /tmp/kcadm.config "$$@" ; }
+        
+        # login
+        kcadm config credentials config --server "$$KEYCLOAK_URL" --realm master --user "$$KEYCLOAK_ADMIN" --password "$$KEYCLOAK_ADMIN_PASSWORD"
+        
+        # create client
+        kcadm create clients -r $${REALM} -f - << EOF
+        {
+          "enabled": true,
+          "clientId": "example",
+          "publicClient": true,
+          "standardFlowEnabled": true,
+          "fullScopeAllowed": true,
+          "webOrigins": ["*"],
+          "redirectUris": ["http://localhost:*", "http://localhost:*/*", "http://127.0.0.1:*", "http://127.0.0.1:*/*" ],
+          "attributes": {
+            "access.token.lifespan": "300",
+            "post.logout.redirect.uris": "+"
+          }
+        }
+        EOF
