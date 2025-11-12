@@ -13,7 +13,79 @@ use std::env;
 use diesel::prelude::*;
 use dotenvy::dotenv;
 
+// --- OpenTelemetry & Tracing Imports ---
+use opentelemetry_sdk::{runtime, trace as sdktrace, Resource};
+use opentelemetry_sdk::trace::Tracer;
+use opentelemetry_semantic_conventions::resource;
+use opentelemetry_otlp::WithExportConfig;
+use tracing_subscriber::prelude::*;
+use tracing_subscriber::{fmt, EnvFilter};
+use opentelemetry_actix_web::Tracing;
+
+use urlencoding::decode;
+
+fn init_telemetry() {
+    let endpoint = env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
+        .expect("OTEL_EXPORTER_OTLP_ENDPOINT not set");
+    let headers_path = env::var("GRAFANA_OTEL_HEADERS_PATH")
+        .expect("GRAFANA_OTEL_HEADERS_PATH not set");
+
+    let headers_file = fs::read_to_string(headers_path)
+        .expect("Failed to read headers file");
+
+    let headers: HashMap<String, String> = if headers_file.trim_start().starts_with('{') {
+        serde_json::from_str(&headers_file)
+            .expect("Failed to parse headers as JSON")
+    } else {
+        let mut map = HashMap::new();
+        for line in headers_file.lines() {
+            if let Some((key, value)) = line.split_once('=') {
+                let decoded_value = decode(value)
+                    .expect("Failed to decode header value")
+                    .into_owned();
+                map.insert(key.trim().to_string(), decoded_value);
+            }
+        }
+        map
+    };
+
+    if headers.is_empty() {
+        tracing::warn!("No headers loaded from headers file. OTLP export might fail.");
+    } else {
+        tracing::info!("Loaded {} headers for OTLP exporter.", headers.len());
+    }
+
+    let exporter = opentelemetry_otlp::new_exporter()
+        .http()
+        .with_endpoint(endpoint)
+        .with_headers(headers);
+
+    let provider = opentelemetry_otlp::new_pipeline()
+        .tracing()
+        .with_exporter(exporter)
+        .with_config(sdktrace::Config::default().with_resource(
+            Resource::new(vec![resource::SERVICE_NAME.string("my-actix-app")])
+        ))
+        .install_batch(opentelemetry::runtime::Tokio)
+        .expect("Failed to install OTLP pipeline");
+
+    let tracer = provider.tracer("my-actix-app-tracer");
+
+    let telemetry_layer = tracing_opentelemetry::layer().with_tracer(tracer);
+
+    let subscriber = tracing_subscriber::registry()
+        .with(EnvFilter::from_default_env().add_directive("info".parse().unwrap()))
+        .with(fmt::Layer::default())
+        .with(telemetry_layer);
+
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("Failed to set global default subscriber");
+
+    tracing::info!("Telemetry initialized successfully!");
+}
+
 #[get("/auth/google")]
+#[tracing::instrument]
 async fn google_auth() -> HttpResponse {
     let client = oauth_client();
     let (auth_url, _csrf_token) = client
@@ -31,6 +103,7 @@ async fn google_auth() -> HttpResponse {
 }
 
 #[get("/auth/google/callback")]
+#[tracing::instrument(skip(query))]
 async fn google_callback(query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {
     let code = query.get("code").unwrap();
     let client = oauth_client();
@@ -66,11 +139,13 @@ fn oauth_client() -> oauth2::basic::BasicClient {
 }
 
 #[get("/")]
+#[tracing::instrument]
 async fn hello() -> impl Responder {
     HttpResponse::Ok().body("Hello, world!")
 }
 
 #[post("/echo")]
+#[tracing::instrument]
 async fn echo(req_body: String) -> impl Responder {
     HttpResponse::Ok().body(req_body)
 }
@@ -89,6 +164,7 @@ async fn manual_hello() -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    init_telemetry(); 
     // Load and validate environment variables at the top
     let key = env::var("TLS_KEY").expect("TLS_KEY environment variable not set");
     let cert = env::var("TLS_CRT").expect("TLS_CRT environment variable not set");
@@ -100,6 +176,8 @@ async fn main() -> std::io::Result<()> {
     let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
     builder.set_private_key_file(&key, SslFiletype::PEM).unwrap();
     builder.set_certificate_chain_file(&cert).unwrap();
+
+    tracing::info!("Starting server at https://0.0.0.0:1235");
 
     // Start server
     HttpServer::new(move || {
