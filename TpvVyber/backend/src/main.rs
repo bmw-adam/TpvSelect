@@ -14,11 +14,8 @@ use diesel::prelude::*;
 use dotenvy::dotenv;
 
 // --- OpenTelemetry & Tracing Imports ---
-use opentelemetry_sdk::{runtime, trace as sdktrace, Resource};
-use opentelemetry_sdk::trace::Tracer;
-use opentelemetry_semantic_conventions::resource;
-use tracing_subscriber::prelude::*;
-use tracing_subscriber::{fmt, EnvFilter};
+mod telemetry_conf;
+use telemetry_conf::init_otel;
 
 use urlencoding::decode;
 
@@ -83,7 +80,6 @@ fn init_telemetry() {
 }
 
 #[get("/auth/google")]
-#[tracing::instrument]
 async fn google_auth() -> HttpResponse {
     let client = oauth_client();
     let (auth_url, _csrf_token) = client
@@ -101,7 +97,6 @@ async fn google_auth() -> HttpResponse {
 }
 
 #[get("/auth/google/callback")]
-#[tracing::instrument(skip(query))]
 async fn google_callback(query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {
     let code = query.get("code").unwrap();
     let client = oauth_client();
@@ -137,13 +132,11 @@ fn oauth_client() -> oauth2::basic::BasicClient {
 }
 
 #[get("/")]
-#[tracing::instrument]
 async fn hello() -> impl Responder {
     HttpResponse::Ok().body("Hello, world!")
 }
 
 #[post("/echo")]
-#[tracing::instrument]
 async fn echo(req_body: String) -> impl Responder {
     HttpResponse::Ok().body(req_body)
 }
@@ -162,7 +155,19 @@ async fn manual_hello() -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    init_telemetry(); 
+    // Roll otel errors up to here and log them in aggregate
+    match init_otel() {
+        Ok(_) => {
+            info!("Successfully configured OTel");
+        }
+        Err(err) => {
+            warn!(
+                "Couldn't start OTel! Will proudly soldier on without telemetry: {0}",
+                err
+            );
+        }
+    };
+
     // Load and validate environment variables at the top
     let key = env::var("TLS_KEY").expect("TLS_KEY environment variable not set");
     let cert = env::var("TLS_CRT").expect("TLS_CRT environment variable not set");

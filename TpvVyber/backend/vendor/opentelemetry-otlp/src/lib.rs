@@ -120,7 +120,7 @@
 //! on the choice of exporters.
 //!
 //! ```no_run
-//! use opentelemetry::{KeyValue, trace::Tracer};
+//! use opentelemetry::{global, KeyValue, trace::Tracer};
 //! use opentelemetry_sdk::{trace::{self, RandomIdGenerator, Sampler}, Resource};
 //! # #[cfg(feature = "metrics")]
 //! use opentelemetry_sdk::metrics::reader::{DefaultAggregationSelector, DefaultTemporalitySelector};
@@ -138,7 +138,7 @@
 //!     map.insert("x-number", "123".parse().unwrap());
 //!     map.insert_bin("trace-proto-bin", MetadataValue::from_bytes(b"[binary data]"));
 //!
-//!     let tracer = opentelemetry_otlp::new_pipeline()
+//!     let tracer_provider = opentelemetry_otlp::new_pipeline()
 //!         .tracing()
 //!         .with_exporter(
 //!             opentelemetry_otlp::new_exporter()
@@ -157,6 +157,8 @@
 //!                 .with_resource(Resource::new(vec![KeyValue::new("service.name", "example")])),
 //!         )
 //!         .install_batch(opentelemetry_sdk::runtime::Tokio)?;
+//!         global::set_tracer_provider(tracer_provider);
+//!         let tracer = global::tracer("tracer-name");
 //!         # tracer
 //!     # };
 //!
@@ -379,9 +381,17 @@ impl From<tonic::Status> for Error {
             code: status.code(),
             message: {
                 if !status.message().is_empty() {
-                    ", detailed error message: ".to_string() + status.message()
+                    let mut result = ", detailed error message: ".to_string() + status.message();
+                    if status.code() == tonic::Code::Unknown {
+                        let source = (&status as &dyn std::error::Error)
+                            .source()
+                            .map(|e| format!("{:?}", e));
+                        result.push(' ');
+                        result.push_str(source.unwrap_or_default().as_ref());
+                    }
+                    result
                 } else {
-                    "".to_string()
+                    String::new()
                 }
             },
         }

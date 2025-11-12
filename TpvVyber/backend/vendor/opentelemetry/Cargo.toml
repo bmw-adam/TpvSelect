@@ -13,7 +13,7 @@
 edition = "2021"
 rust-version = "1.65"
 name = "opentelemetry"
-version = "0.23.0"
+version = "0.24.0"
 description = "OpenTelemetry API for Rust"
 homepage = "https://github.com/open-telemetry/opentelemetry-rust"
 readme = "README.md"
@@ -49,6 +49,10 @@ required-features = ["metrics"]
 name = "attributes"
 harness = false
 
+[[bench]]
+name = "anyvalue"
+harness = false
+
 [dependencies.futures-core]
 version = "0.3"
 
@@ -67,10 +71,18 @@ version = "1"
 default-features = false
 
 [dev-dependencies.criterion]
-version = "0.3"
+version = "0.5"
+
+[dev-dependencies.rand]
+version = "0.8"
+default-features = false
 
 [features]
-default = ["trace"]
+default = [
+    "trace",
+    "metrics",
+    "logs",
+]
 logs = []
 logs_level_enabled = ["logs"]
 metrics = []

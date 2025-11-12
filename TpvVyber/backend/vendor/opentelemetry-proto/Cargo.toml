@@ -11,9 +11,9 @@
 
 [package]
 edition = "2021"
-rust-version = "1.65"
+rust-version = "1.70"
 name = "opentelemetry-proto"
-version = "0.6.0"
+version = "0.7.0"
 autotests = false
 description = "Protobuf generated files and transformations."
 homepage = "https://github.com/open-telemetry/opentelemetry-rust/tree/main/opentelemetry-proto"
@@ -49,15 +49,15 @@ version = "0.4.3"
 optional = true
 
 [dependencies.opentelemetry]
-version = "0.23"
+version = "0.24"
 default-features = false
 
 [dependencies.opentelemetry_sdk]
-version = "0.23"
+version = "0.24"
 default-features = false
 
 [dependencies.prost]
-version = "0.12"
+version = "0.13"
 optional = true
 
 [dependencies.schemars]
@@ -71,7 +71,7 @@ optional = true
 default-features = false
 
 [dependencies.tonic]
-version = "0.11"
+version = "0.12"
 features = [
     "codegen",
     "prost",
@@ -79,8 +79,12 @@ features = [
 optional = true
 default-features = false
 
+[dev-dependencies.opentelemetry]
+version = "0.24"
+features = ["testing"]
+
 [dev-dependencies.prost-build]
-version = "0.12"
+version = "0.13"
 
 [dev-dependencies.serde_json]
 version = "1.0"
@@ -89,10 +93,10 @@ version = "1.0"
 version = "3.3.0"
 
 [dev-dependencies.tonic-build]
-version = "0.11"
+version = "0.12"
 
 [features]
-default = []
+default = ["full"]
 full = [
     "gen-tonic",
     "trace",
@@ -117,6 +121,7 @@ metrics = [
     "opentelemetry/metrics",
     "opentelemetry_sdk/metrics",
 ]
+testing = ["opentelemetry/testing"]
 trace = [
     "opentelemetry/trace",
     "opentelemetry_sdk/trace",

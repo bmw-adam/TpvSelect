@@ -15,9 +15,11 @@
     html_logo_url = "https://raw.githubusercontent.com/open-telemetry/opentelemetry-rust/main/assets/logo.svg"
 )]
 
+pub mod attribute;
+pub mod metric;
 pub mod resource;
 pub mod trace;
 
 /// The schema URL that matches the version of the semantic conventions that
 /// this crate defines.
-pub const SCHEMA_URL: &str = "https://opentelemetry.io/schemas/1.25.0";
+pub const SCHEMA_URL: &str = "https://opentelemetry.io/schemas/1.26.0";

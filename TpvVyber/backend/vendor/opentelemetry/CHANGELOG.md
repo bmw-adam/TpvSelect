@@ -2,6 +2,20 @@
 
 ## vNext
 
+## v0.24.0
+
+- Add "metrics", "logs" to default features. With this, default feature list is
+  "trace", "metrics" and "logs".
+- When "metrics" feature is enabled, `KeyValue` implements `PartialEq`, `Eq`,
+  `PartialOrder`, `Order`, `Hash`. This is meant to be used for metrics
+  aggregation purposes only.
+- Removed `Unit` struct for specifying Instrument units. Unit is treated as an
+  opaque string. Migration: Replace `.with_unit(Unit::new("myunit"))` with
+  `.with_unit("myunit")`.
+
+- [1869](https://github.com/open-telemetry/opentelemetry-rust/pull/1869) Introduced the `LogRecord::set_target()` method in the log bridge API. 
+This method allows appenders to set the target/component emitting the logs.
+
 ## v0.23.0
 
 ### Added

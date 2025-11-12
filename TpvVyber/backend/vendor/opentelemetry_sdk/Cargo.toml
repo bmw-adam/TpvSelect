@@ -13,7 +13,7 @@
 edition = "2021"
 rust-version = "1.65"
 name = "opentelemetry_sdk"
-version = "0.23.0"
+version = "0.24.1"
 description = "The SDK for the OpenTelemetry metrics collection and distributed tracing framework"
 homepage = "https://github.com/open-telemetry/opentelemetry-rust"
 readme = "README.md"
@@ -38,7 +38,10 @@ harness = false
 [[bench]]
 name = "metric_counter"
 harness = false
-required-features = ["metrics"]
+
+[[bench]]
+name = "metric_gauge"
+harness = false
 
 [[bench]]
 name = "attribute_set"
@@ -96,25 +99,20 @@ version = "0.3.1"
 optional = true
 
 [dependencies.http]
-version = "0.2"
+version = "1.1"
+features = ["std"]
 optional = true
 default-features = false
-
-[dependencies.lazy_static]
-version = "1.4.0"
 
 [dependencies.once_cell]
 version = "1.13"
 
 [dependencies.opentelemetry]
-version = "0.23"
+version = "0.24"
 
 [dependencies.opentelemetry-http]
-version = "0.12"
+version = "0.13"
 optional = true
-
-[dependencies.ordered-float]
-version = "4.0"
 
 [dependencies.percent-encoding]
 version = "2.0"
@@ -161,7 +159,7 @@ version = "0.1.1"
 optional = true
 
 [dependencies.url]
-version = "2.2"
+version = "2.5"
 optional = true
 default-features = false
 
@@ -169,14 +167,15 @@ default-features = false
 version = "0.5"
 features = ["html_reports"]
 
-[dev-dependencies.indexmap]
-version = "2.0"
-
 [dev-dependencies.temp-env]
 version = "0.3.6"
 
 [features]
-default = ["trace"]
+default = [
+    "trace",
+    "metrics",
+    "logs",
+]
 jaeger_remote_sampler = [
     "trace",
     "opentelemetry-http",

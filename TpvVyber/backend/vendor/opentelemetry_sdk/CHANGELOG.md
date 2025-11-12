@@ -2,6 +2,88 @@
 
 ## vNext
 
+## v0.24.1
+
+- Add hidden method to support tracing-opentelemetry
+
+## v0.24.0
+
+- Add "metrics", "logs" to default features. With this, default feature list is
+  "trace", "metrics" and "logs".
+- Add `with_resource` on Builder for LoggerProvider, replacing the `with_config`
+  method. Instead of using
+  `.with_config(Config::default().with_resource(RESOURCE::default()))` users
+  must now use `.with_resource(RESOURCE::default())` to configure Resource on
+  logger provider.
+- Removed dependency on `ordered-float`.
+- Removed `XrayIdGenerator`, which was marked deprecated since 0.21.3. Use
+  [`opentelemetry-aws`](https://crates.io/crates/opentelemetry-aws), version
+  0.10.0 or newer.
+- Performance Improvement - Counter/UpDownCounter instruments internally use
+  `RwLock` instead of `Mutex` to reduce contention
+
+- **Breaking** [1726](https://github.com/open-telemetry/opentelemetry-rust/pull/1726)
+  Update `LogProcessor::emit()` method to take mutable reference to LogData. This is breaking
+  change for LogProcessor developers. If the processor needs to invoke the exporter
+  asynchronously, it should clone the data to ensure it can be safely processed without
+  lifetime issues. Any changes made to the log data before cloning in this method will be
+  reflected in the next log processor in the chain, as well as to the exporter.
+- **Breaking** [1726](https://github.com/open-telemetry/opentelemetry-rust/pull/1726)
+ Update `LogExporter::export()` method to accept a batch of log data, which can be either a
+ reference or owned`LogData`. If the exporter needs to process the log data
+ asynchronously, it should clone the log data to ensure it can be safely processed without
+ lifetime issues.
+- Clean up public methods in SDK.
+    - [`TracerProvider::span_processors`] and [`TracerProvider::config`] was removed as it's not part of the spec.
+    - Added `non_exhaustive` annotation to [`trace::Config`]. Marked [`config`] as deprecated since it's only a wrapper for `Config::default`
+    - Removed [`Tracer::tracer_provder`] and [`Tracer::instrument_libraries`] as it's not part of the spec.
+
+- **Breaking** [#1830](https://github.com/open-telemetry/opentelemetry-rust/pull/1830/files) [Traces SDK] Improves
+  performance by sending Resource information to processors (and exporters) once, instead of sending with every log. If you are an author
+  of Processor, Exporter, the following are *BREAKING* changes.
+    - Implement `set_resource` method in your custom SpanProcessor, which invokes exporter's `set_resource`.
+    - Implement `set_resource` method in your custom SpanExporter. This method should save the resource object
+      in original or serialized format, to be merged with every span event during export.
+    - `SpanData` doesn't have the resource attributes. The `SpanExporter::export()` method needs to merge it
+      with the earlier preserved resource before export.
+
+- **Breaking** [1836](https://github.com/open-telemetry/opentelemetry-rust/pull/1836) `SpanProcessor::shutdown` now takes an immutable reference to self. Any reference can call shutdown on the processor. After the first call to `shutdown` the processor will not process any new spans.
+
+- **Breaking** [1850] (https://github.com/open-telemetry/opentelemetry-rust/pull/1850) `LoggerProvider::log_processors()` and `LoggerProvider::resource()` are not public methods anymore. They are only used within the `opentelemetry-sdk` crate.
+
+- [1857](https://github.com/open-telemetry/opentelemetry-rust/pull/1857) Fixed an issue in Metrics SDK which prevented export errors from being send to global error handler. With the fix, errors occurring during export like OTLP Endpoint unresponsive shows up in stderr by default.
+
+- [1869](https://github.com/open-telemetry/opentelemetry-rust/pull/1869) Added a `target` field to `LogRecord` structure, populated by `opentelemetry-appender-tracing` and `opentelemetry-appender-log` appenders.
+```rust
+async fn export<'a>(&mut self, batch: Vec<Cow<'a, LogData>>) -> LogResult<()>;
+```
+where `LogRecord` within `LogData` now includes:
+```rust
+LogData {
+  LogRecord {
+    event_name,
+    target,  // newly added
+    timestamp,
+    observed_timestamp,
+    trace_context,
+    trace_context,
+    severity_number,
+    body,
+    attributes
+  }
+  Instrumentation {
+    name,
+    version,
+    schema_url,
+    version
+  }
+}
+```
+The `LogRecord::target` field contains the actual target/component emitting the logs, while the `Instrumentation::name` contains the name of the OpenTelemetry appender.
+- **Breaking** [#1674](https://github.com/open-telemetry/opentelemetry-rust/pull/1674) Update to `http` v1 types (via `opentelemetry-http` update)
+- Update `opentelemetry` dependency version to 0.24
+- Update `opentelemetry-http` dependency version to 0.13
+
 ## v0.23.0
 
 - Fix SimpleSpanProcessor to be consistent with log counterpart. Also removed
@@ -17,17 +99,17 @@
 - **Breaking** [#1624](https://github.com/open-telemetry/opentelemetry-rust/pull/1624) Remove `OsResourceDetector` and
   `ProcessResourceDetector` resource detectors, use the
   [`opentelemetry-resource-detector`](https://crates.io/crates/opentelemetry-resource-detectors) instead.
-- [#1636](https://github.com/open-telemetry/opentelemetry-rust/pull/1636) [Logs SDK] Improves performance by sending 
+- [#1636](https://github.com/open-telemetry/opentelemetry-rust/pull/1636) [Logs SDK] Improves performance by sending
   Resource information to processors (and exporters) once, instead of sending with every log. If you are an author
   of Processor, Exporter, the following are *BREAKING* changes.
     - Implement `set_resource` method in your custom LogProcessor, which invokes exporter's `set_resource`.
     - Implement `set_resource` method in your custom LogExporter. This method should save the resource object
       in original or serialized format, to be merged with every log event during export.
-    - `LogData` doesn't have the resource attributes. The `LogExporter::export()` method needs to merge it 
+    - `LogData` doesn't have the resource attributes. The `LogExporter::export()` method needs to merge it
       with the earlier preserved resource before export.
 - Baggage propagation error will be reported to global error handler [#1640](https://github.com/open-telemetry/opentelemetry-rust/pull/1640)
 - Improves `shutdown` behavior of `LoggerProvider` and `LogProcessor` [#1643](https://github.com/open-telemetry/opentelemetry-rust/pull/1643).
-  - `shutdown` can be called by any clone of the `LoggerProvider` without the need of waiting on all `Logger` drops. Thus, `try_shutdown` has been removed. 
+  - `shutdown` can be called by any clone of the `LoggerProvider` without the need of waiting on all `Logger` drops. Thus, `try_shutdown` has been removed.
   - `shutdown` methods in `LoggerProvider` and `LogProcessor` now takes a immutable reference
   - After `shutdown`, `LoggerProvider` will return noop `Logger`
   - After `shutdown`, `LogProcessor` will not process any new logs

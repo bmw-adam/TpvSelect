@@ -260,7 +260,7 @@ impl<RT: Runtime> PeriodicReaderWorker<RT> {
         pin_mut!(timeout);
 
         match future::select(export, timeout).await {
-            Either::Left(_) => Ok(()),
+            Either::Left((res, _)) => res, // return the status of export.
             Either::Right(_) => Err(MetricsError::Other("export timed out".into())),
         }
     }
@@ -291,7 +291,7 @@ impl<RT: Runtime> PeriodicReaderWorker<RT> {
         true
     }
 
-    async fn run(mut self, mut messages: impl Unpin + FusedStream<Item = Message>) {
+    async fn run(mut self, mut messages: impl FusedStream<Item = Message> + Unpin) {
         while let Some(message) = messages.next().await {
             if !self.process_message(message).await {
                 break;
