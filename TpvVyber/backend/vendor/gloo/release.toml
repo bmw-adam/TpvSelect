@@ -1,4 +1,0 @@
-sign-tag = true
-sign-commit = true
-consolidate-commits = false
-tag-message = 'Release `{{crate_name}}` v{{version}}'
