@@ -17,10 +17,8 @@ use dotenvy::dotenv;
 use opentelemetry_sdk::{runtime, trace as sdktrace, Resource};
 use opentelemetry_sdk::trace::Tracer;
 use opentelemetry_semantic_conventions::resource;
-use opentelemetry_otlp::WithExportConfig;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{fmt, EnvFilter};
-use opentelemetry_actix_web::Tracing;
 
 use urlencoding::decode;
 

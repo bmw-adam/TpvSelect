@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_call:
+  # But don't trigger on tags, as they are covered by the "release.yaml" workflow
+
+jobs:
+  check:
+
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+          # minimum version: because of "bumpalo"
+          - "1.73.0"
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Install Rust ${{ matrix.toolchain }}
+        run: |
+          rustup toolchain install ${{ matrix.toolchain }} --component rustfmt,clippy --target wasm32-unknown-unknown
+          rustup default ${{ matrix.toolchain }}
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.toml') }}
+
+      - name: Run cargo fmt
+        run: |
+          cargo +${{ matrix.toolchain }} fmt --all -- --check
+
+      - name: Install binstall
+        run: |
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+
+      - name: Install cargo-all-features
+        run: |
+          cargo binstall -y cargo-all-features
+
+      - name: Run cargo check
+        run: |
+          cargo +${{ matrix.toolchain }} check-all-features --target wasm32-unknown-unknown
+
+      - name: Run cargo test
+        run: |
+          cargo +${{ matrix.toolchain }} test-all-features
+
+      - name: Run cargo clippy
+        run: |
+          cargo +${{ matrix.toolchain }} clippy --target wasm32-unknown-unknown -- -D warnings
+
+      - name: Run cargo clippy (all features)
+        run: |
+          cargo +${{ matrix.toolchain }} clippy --all-features --target wasm32-unknown-unknown -- -D warnings
+
+  examples:
+
+    runs-on: ubuntu-22.04
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-examples-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.toml') }}
+
+      - name: Check (yew-oauth2-example)
+        run: |
+          cd yew-oauth2-example
+          cargo check
+          cargo check --features openid
+
+      - name: Check (yew-oauth2-redirect-example)
+        run: |
+          cd yew-oauth2-redirect-example
+          cargo check
+          cargo check --features openid
