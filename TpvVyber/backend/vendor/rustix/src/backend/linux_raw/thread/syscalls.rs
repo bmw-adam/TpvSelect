@@ -372,8 +372,8 @@ pub(crate) fn setns(fd: BorrowedFd<'_>, nstype: c::c_int) -> io::Result<c::c_int
 }
 
 #[inline]
-pub(crate) fn unshare(flags: crate::thread::UnshareFlags) -> io::Result<()> {
-    unsafe { ret(syscall_readonly!(__NR_unshare, flags)) }
+pub(crate) unsafe fn unshare(flags: crate::thread::UnshareFlags) -> io::Result<()> {
+    ret(syscall_readonly!(__NR_unshare, flags))
 }
 
 #[inline]
@@ -405,9 +405,9 @@ pub(crate) fn setuid_thread(uid: crate::ugid::Uid) -> io::Result<()> {
 
 #[inline]
 pub(crate) fn setresuid_thread(
-    ruid: crate::ugid::Uid,
-    euid: crate::ugid::Uid,
-    suid: crate::ugid::Uid,
+    ruid: Option<crate::ugid::Uid>,
+    euid: Option<crate::ugid::Uid>,
+    suid: Option<crate::ugid::Uid>,
 ) -> io::Result<()> {
     #[cfg(any(target_arch = "x86", target_arch = "arm", target_arch = "sparc"))]
     unsafe {
@@ -426,9 +426,9 @@ pub(crate) fn setgid_thread(gid: crate::ugid::Gid) -> io::Result<()> {
 
 #[inline]
 pub(crate) fn setresgid_thread(
-    rgid: crate::ugid::Gid,
-    egid: crate::ugid::Gid,
-    sgid: crate::ugid::Gid,
+    rgid: Option<crate::ugid::Gid>,
+    egid: Option<crate::ugid::Gid>,
+    sgid: Option<crate::ugid::Gid>,
 ) -> io::Result<()> {
     #[cfg(any(target_arch = "x86", target_arch = "arm", target_arch = "sparc"))]
     unsafe {

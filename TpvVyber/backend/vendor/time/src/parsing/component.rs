@@ -1,6 +1,6 @@
 //! Parsing implementations for all [`Component`](crate::format_description::Component)s.
 
-use core::num::{NonZeroU16, NonZeroU8};
+use core::num::NonZero;
 
 use num_conv::prelude::*;
 
@@ -197,18 +197,20 @@ pub(crate) fn parse_weekday(
 }
 
 /// Parse the "ordinal" component of a `Date`.
+#[inline]
 pub(crate) fn parse_ordinal(
     input: &[u8],
     modifiers: modifier::Ordinal,
-) -> Option<ParsedItem<'_, NonZeroU16>> {
+) -> Option<ParsedItem<'_, NonZero<u16>>> {
     exactly_n_digits_padded::<3, _>(modifiers.padding)(input)
 }
 
 /// Parse the "day" component of a `Date`.
+#[inline]
 pub(crate) fn parse_day(
     input: &[u8],
     modifiers: modifier::Day,
-) -> Option<ParsedItem<'_, NonZeroU8>> {
+) -> Option<ParsedItem<'_, NonZero<u8>>> {
     exactly_n_digits_padded::<2, _>(modifiers.padding)(input)
 }
 
@@ -222,11 +224,13 @@ pub(crate) enum Period {
 }
 
 /// Parse the "hour" component of a `Time`.
+#[inline]
 pub(crate) fn parse_hour(input: &[u8], modifiers: modifier::Hour) -> Option<ParsedItem<'_, u8>> {
     exactly_n_digits_padded::<2, _>(modifiers.padding)(input)
 }
 
 /// Parse the "minute" component of a `Time`.
+#[inline]
 pub(crate) fn parse_minute(
     input: &[u8],
     modifiers: modifier::Minute,
@@ -235,6 +239,7 @@ pub(crate) fn parse_minute(
 }
 
 /// Parse the "second" component of a `Time`.
+#[inline]
 pub(crate) fn parse_second(
     input: &[u8],
     modifiers: modifier::Second,
@@ -243,6 +248,7 @@ pub(crate) fn parse_second(
 }
 
 /// Parse the "period" component of a `Time`. Required if the hour is on a 12-hour clock.
+#[inline]
 pub(crate) fn parse_period(
     input: &[u8],
     modifiers: modifier::Period,
@@ -312,6 +318,7 @@ pub(crate) fn parse_offset_hour(
 }
 
 /// Parse the "minute" component of a `UtcOffset`.
+#[inline]
 pub(crate) fn parse_offset_minute(
     input: &[u8],
     modifiers: modifier::OffsetMinute,
@@ -323,6 +330,7 @@ pub(crate) fn parse_offset_minute(
 }
 
 /// Parse the "second" component of a `UtcOffset`.
+#[inline]
 pub(crate) fn parse_offset_second(
     input: &[u8],
     modifiers: modifier::OffsetSecond,
@@ -334,6 +342,7 @@ pub(crate) fn parse_offset_second(
 }
 
 /// Ignore the given number of bytes.
+#[inline]
 pub(crate) fn parse_ignore(
     input: &[u8],
     modifiers: modifier::Ignore,
@@ -350,12 +359,13 @@ pub(crate) fn parse_unix_timestamp(
 ) -> Option<ParsedItem<'_, i128>> {
     let ParsedItem(input, sign) = opt(sign)(input);
     let ParsedItem(input, nano_timestamp) = match modifiers.precision {
-        modifier::UnixTimestampPrecision::Second => n_to_m_digits::<1, 14, u128>(input)?
-            .map(|val| val * Nanosecond::per(Second).extend::<u128>()),
+        modifier::UnixTimestampPrecision::Second => {
+            n_to_m_digits::<1, 14, u128>(input)?.map(|val| val * Nanosecond::per_t::<u128>(Second))
+        }
         modifier::UnixTimestampPrecision::Millisecond => n_to_m_digits::<1, 17, u128>(input)?
-            .map(|val| val * Nanosecond::per(Millisecond).extend::<u128>()),
+            .map(|val| val * Nanosecond::per_t::<u128>(Millisecond)),
         modifier::UnixTimestampPrecision::Microsecond => n_to_m_digits::<1, 20, u128>(input)?
-            .map(|val| val * Nanosecond::per(Microsecond).extend::<u128>()),
+            .map(|val| val * Nanosecond::per_t::<u128>(Microsecond)),
         modifier::UnixTimestampPrecision::Nanosecond => n_to_m_digits::<1, 23, _>(input)?,
     };
 
@@ -368,6 +378,7 @@ pub(crate) fn parse_unix_timestamp(
 
 /// Parse the `end` component, which represents the end of input. If any input is remaining, `None`
 /// is returned.
+#[inline]
 pub(crate) const fn parse_end(input: &[u8], end: modifier::End) -> Option<ParsedItem<'_, ()>> {
     let modifier::End {} = end;
 

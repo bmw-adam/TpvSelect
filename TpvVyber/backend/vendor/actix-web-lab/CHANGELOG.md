@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.24.3
+
+- Add `ConditionOption` middleware.
+
+## 0.24.2
+
+- Add `LazyDataShared` extractor.
+
 ## 0.24.1
 
 - Fix `RedirectHttps` middleware when used with IPv6 addresses.

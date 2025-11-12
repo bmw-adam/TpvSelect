@@ -13,7 +13,7 @@ use crate::fd::{AsFd as _, BorrowedFd, OwnedFd, RawFd};
     target_os = "wasi"
 )))]
 use crate::io::DupFlags;
-#[cfg(linux_kernel)]
+#[cfg(all(linux_kernel, not(target_os = "android")))]
 use crate::io::ReadWriteFlags;
 use crate::io::{self, FdFlags};
 use crate::ioctl::{IoctlOutput, Opcode};
@@ -52,9 +52,8 @@ pub(crate) unsafe fn pread(
     // Silently cast; we'll get `EINVAL` if the value is negative.
     let offset = offset as i64;
 
-    // ESP-IDF and Vita don't support 64-bit offsets.
-    #[cfg(any(target_os = "espidf", target_os = "vita"))]
-    let offset: i32 = offset.try_into().map_err(|_| io::Errno::OVERFLOW)?;
+    // ESP-IDF and Vita don't support 64-bit offsets, for example.
+    let offset = offset.try_into().map_err(|_| io::Errno::OVERFLOW)?;
 
     ret_usize(c::pread(borrowed_fd(fd), buf.0.cast(), len, offset))
 }
@@ -65,9 +64,8 @@ pub(crate) fn pwrite(fd: BorrowedFd<'_>, buf: &[u8], offset: u64) -> io::Result<
     // Silently cast; we'll get `EINVAL` if the value is negative.
     let offset = offset as i64;
 
-    // ESP-IDF and Vita don't support 64-bit offsets.
-    #[cfg(any(target_os = "espidf", target_os = "vita"))]
-    let offset: i32 = offset.try_into().map_err(|_| io::Errno::OVERFLOW)?;
+    // ESP-IDF and Vita don't support 64-bit offsets, for example.
+    let offset = offset.try_into().map_err(|_| io::Errno::OVERFLOW)?;
 
     unsafe { ret_usize(c::pwrite(borrowed_fd(fd), buf.as_ptr().cast(), len, offset)) }
 }
@@ -111,6 +109,10 @@ pub(crate) fn preadv(
 ) -> io::Result<usize> {
     // Silently cast; we'll get `EINVAL` if the value is negative.
     let offset = offset as i64;
+
+    // ESP-IDF and Vita don't support 64-bit offsets, for example.
+    let offset = offset.try_into().map_err(|_| io::Errno::OVERFLOW)?;
+
     unsafe {
         ret_usize(c::preadv(
             borrowed_fd(fd),
@@ -134,6 +136,10 @@ pub(crate) fn preadv(
 pub(crate) fn pwritev(fd: BorrowedFd<'_>, bufs: &[IoSlice<'_>], offset: u64) -> io::Result<usize> {
     // Silently cast; we'll get `EINVAL` if the value is negative.
     let offset = offset as i64;
+
+    // ESP-IDF and Vita don't support 64-bit offsets, for example.
+    let offset = offset.try_into().map_err(|_| io::Errno::OVERFLOW)?;
+
     unsafe {
         ret_usize(c::pwritev(
             borrowed_fd(fd),
@@ -144,7 +150,7 @@ pub(crate) fn pwritev(fd: BorrowedFd<'_>, bufs: &[IoSlice<'_>], offset: u64) -> 
     }
 }
 
-#[cfg(linux_kernel)]
+#[cfg(all(linux_kernel, not(target_os = "android")))]
 pub(crate) fn preadv2(
     fd: BorrowedFd<'_>,
     bufs: &mut [IoSliceMut<'_>],
@@ -164,7 +170,7 @@ pub(crate) fn preadv2(
     }
 }
 
-#[cfg(linux_kernel)]
+#[cfg(all(linux_kernel, not(target_os = "android")))]
 pub(crate) fn pwritev2(
     fd: BorrowedFd<'_>,
     bufs: &[IoSlice<'_>],

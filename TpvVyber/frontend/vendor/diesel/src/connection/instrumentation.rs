@@ -1,7 +1,7 @@
-use std::fmt::Debug;
-use std::fmt::Display;
+use downcast_rs::Downcast;
+use std::fmt::{Debug, Display};
 use std::num::NonZeroU32;
-use std::ops::DerefMut;
+use std::ops::{Deref, DerefMut};
 
 static GLOBAL_INSTRUMENTATION: std::sync::RwLock<fn() -> Option<Box<dyn Instrumentation>>> =
     std::sync::RwLock::new(|| None);
@@ -243,10 +243,11 @@ impl<'a> InstrumentationEvent<'a> {
 /// More complex usages and integrations with frameworks like
 /// `tracing` and `log` are supposed to be part of their own
 /// crates.
-pub trait Instrumentation: Send + 'static {
+pub trait Instrumentation: Downcast + Send + 'static {
     /// The function that is invoked for each event
     fn on_connection_event(&mut self, event: InstrumentationEvent<'_>);
 }
+downcast_rs::impl_downcast!(Instrumentation);
 
 /// Get an instance of the default [`Instrumentation`]
 ///
@@ -313,6 +314,123 @@ where
     fn on_connection_event(&mut self, event: InstrumentationEvent<'_>) {
         if let Some(i) = self {
             i.on_connection_event(event)
+        }
+    }
+}
+
+#[diesel_derives::__diesel_public_if(
+    feature = "i-implement-a-third-party-backend-and-opt-into-breaking-changes"
+)]
+/// An optional dyn instrumentation.
+///
+/// For ease of use, this type implements [`Deref`] and [`DerefMut`] to `&dyn Instrumentation`,
+/// falling back to a no-op implementation if no instrumentation is set.
+///
+/// The DynInstrumentation type is useful because without it we actually did tend to return
+/// (accidentally) `&mut Option<Box> as &mut dyn Instrumentation` from `connection.instrumentation()`,
+/// so downcasting would have to be done in these two steps by the user, which is counter-intuitive.
+pub(crate) struct DynInstrumentation {
+    /// zst
+    no_instrumentation: NoInstrumentation,
+    inner: Option<Box<dyn Instrumentation>>,
+}
+
+impl Deref for DynInstrumentation {
+    type Target = dyn Instrumentation;
+
+    fn deref(&self) -> &Self::Target {
+        self.inner.as_deref().unwrap_or(&self.no_instrumentation)
+    }
+}
+
+impl DerefMut for DynInstrumentation {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.inner
+            .as_deref_mut()
+            .unwrap_or(&mut self.no_instrumentation)
+    }
+}
+
+impl DynInstrumentation {
+    /// Create a instance of the default instrumentation provider
+    #[diesel_derives::__diesel_public_if(
+        feature = "i-implement-a-third-party-backend-and-opt-into-breaking-changes"
+    )]
+    #[cfg(any(
+        feature = "postgres",
+        feature = "sqlite",
+        feature = "mysql",
+        feature = "i-implement-a-third-party-backend-and-opt-into-breaking-changes"
+    ))]
+    pub(crate) fn default_instrumentation() -> Self {
+        Self {
+            inner: get_default_instrumentation(),
+            no_instrumentation: NoInstrumentation,
+        }
+    }
+
+    /// Create a noop instrumentation provider instance
+    #[diesel_derives::__diesel_public_if(
+        feature = "i-implement-a-third-party-backend-and-opt-into-breaking-changes"
+    )]
+    #[cfg(any(
+        feature = "postgres",
+        feature = "sqlite",
+        feature = "mysql",
+        feature = "i-implement-a-third-party-backend-and-opt-into-breaking-changes"
+    ))]
+    pub(crate) fn none() -> Self {
+        Self {
+            inner: None,
+            no_instrumentation: NoInstrumentation,
+        }
+    }
+
+    /// register an event with the given instrumentation implementation
+    #[diesel_derives::__diesel_public_if(
+        feature = "i-implement-a-third-party-backend-and-opt-into-breaking-changes"
+    )]
+    #[cfg(any(
+        feature = "postgres",
+        feature = "sqlite",
+        feature = "mysql",
+        feature = "i-implement-a-third-party-backend-and-opt-into-breaking-changes"
+    ))]
+    pub(crate) fn on_connection_event(&mut self, event: InstrumentationEvent<'_>) {
+        // This implementation is not necessary to be able to call this method on this object
+        // because of the already existing Deref impl.
+        // However it allows avoiding the dynamic dispatch to the stub value
+        if let Some(inner) = self.inner.as_deref_mut() {
+            inner.on_connection_event(event)
+        }
+    }
+}
+
+impl<I: Instrumentation> From<I> for DynInstrumentation {
+    fn from(instrumentation: I) -> Self {
+        Self {
+            inner: Some(unpack_instrumentation(Box::new(instrumentation))),
+            no_instrumentation: NoInstrumentation,
+        }
+    }
+}
+
+struct NoInstrumentation;
+
+impl Instrumentation for NoInstrumentation {
+    fn on_connection_event(&mut self, _: InstrumentationEvent<'_>) {}
+}
+
+/// Unwrap unnecessary boxing levels
+fn unpack_instrumentation(
+    mut instrumentation: Box<dyn Instrumentation>,
+) -> Box<dyn Instrumentation> {
+    loop {
+        match instrumentation.downcast::<Box<dyn Instrumentation>>() {
+            Ok(extra_boxed_instrumentation) => instrumentation = *extra_boxed_instrumentation,
+            Err(not_extra_boxed_instrumentation) => {
+                break not_extra_boxed_instrumentation;
+            }
         }
     }
 }

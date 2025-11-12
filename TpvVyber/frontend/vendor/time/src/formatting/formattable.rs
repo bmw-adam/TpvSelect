@@ -34,7 +34,6 @@ impl<T: Deref> Formattable for T where T::Target: Formattable {}
 
 /// Seal the trait to prevent downstream users from implementing it.
 mod sealed {
-    #[allow(clippy::wildcard_imports)]
     use super::*;
 
     /// Format the item using a format description, the intended output, and the various components.
@@ -49,6 +48,7 @@ mod sealed {
         ) -> Result<usize, error::Format>;
 
         /// Format the item directly to a `String`.
+        #[inline]
         fn format(
             &self,
             date: Option<Date>,
@@ -63,6 +63,7 @@ mod sealed {
 }
 
 impl sealed::Sealed for BorrowedFormatItem<'_> {
+    #[inline]
     fn format_into(
         &self,
         output: &mut (impl io::Write + ?Sized),
@@ -84,6 +85,7 @@ impl sealed::Sealed for BorrowedFormatItem<'_> {
 }
 
 impl sealed::Sealed for [BorrowedFormatItem<'_>] {
+    #[inline]
     fn format_into(
         &self,
         output: &mut (impl io::Write + ?Sized),
@@ -100,6 +102,7 @@ impl sealed::Sealed for [BorrowedFormatItem<'_>] {
 }
 
 impl sealed::Sealed for OwnedFormatItem {
+    #[inline]
     fn format_into(
         &self,
         output: &mut (impl io::Write + ?Sized),
@@ -121,6 +124,7 @@ impl sealed::Sealed for OwnedFormatItem {
 }
 
 impl sealed::Sealed for [OwnedFormatItem] {
+    #[inline]
     fn format_into(
         &self,
         output: &mut (impl io::Write + ?Sized),
@@ -136,10 +140,11 @@ impl sealed::Sealed for [OwnedFormatItem] {
     }
 }
 
-impl<T: Deref> sealed::Sealed for T
+impl<T> sealed::Sealed for T
 where
-    T::Target: sealed::Sealed,
+    T: Deref<Target: sealed::Sealed>,
 {
+    #[inline]
     fn format_into(
         &self,
         output: &mut (impl io::Write + ?Sized),
@@ -279,6 +284,7 @@ impl sealed::Sealed for Rfc3339 {
 }
 
 impl<const CONFIG: EncodedConfig> sealed::Sealed for Iso8601<CONFIG> {
+    #[inline]
     fn format_into(
         &self,
         output: &mut (impl io::Write + ?Sized),

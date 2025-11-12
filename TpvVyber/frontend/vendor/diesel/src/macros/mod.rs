@@ -19,7 +19,7 @@ pub use diesel_derives::table_proc as table;
 /// explicit `ON` clause.
 ///
 /// The generated `ON` clause will always join to the primary key of the parent
-/// table. This macro removes the need to call [`.on`] explicitly, you will
+/// table. This macro removes the need to call [`.on`](crate::query_dsl::JoinOnDsl::on) explicitly, you will
 /// still need to invoke
 /// [`allow_tables_to_appear_in_same_query!`](crate::allow_tables_to_appear_in_same_query)
 /// for these two tables to be able to use the resulting query, unless you are
@@ -55,7 +55,6 @@ pub use diesel_derives::table_proc as table;
 ///
 /// assert_eq!(implicit_on_clause_sql, explicit_on_clause_sql);
 /// # }
-///
 /// ```
 ///
 /// In the example above, the line `joinable!(posts -> users (user_id));`
@@ -414,7 +413,9 @@ macro_rules! __diesel_impl_allow_in_same_group_by_clause {
 /// allow_columns_to_appear_in_same_group_by_clause!(users::name, posts::id, posts::title);
 /// # fn main() {
 /// // to do implement the following join
-/// users::table.inner_join(posts::table).group_by((users::name, posts::id, posts::title))
+/// users::table
+///     .inner_join(posts::table)
+///     .group_by((users::name, posts::id, posts::title))
 /// # ;
 /// # }
 /// ```
@@ -515,7 +516,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     #[cfg(feature = "postgres")]
     fn table_with_custom_schema() {
         use crate::pg::Pg;
@@ -556,7 +557,7 @@ mod tests {
         }
     );
 
-    #[test]
+    #[diesel_test_helper::test]
     #[cfg(feature = "postgres")]
     fn table_with_column_renaming_postgres() {
         use crate::pg::Pg;
@@ -567,7 +568,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     #[cfg(feature = "mysql")]
     fn table_with_column_renaming_mysql() {
         use crate::mysql::Mysql;
@@ -578,7 +579,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     #[cfg(feature = "sqlite")]
     fn table_with_column_renaming_sqlite() {
         use crate::sqlite::Sqlite;
@@ -600,7 +601,7 @@ mod tests {
         }
     );
 
-    #[test]
+    #[diesel_test_helper::test]
     #[cfg(feature = "postgres")]
     fn table_renaming_postgres() {
         use crate::pg::Pg;
@@ -611,7 +612,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     #[cfg(feature = "mysql")]
     fn table_renaming_mysql() {
         use crate::mysql::Mysql;
@@ -622,7 +623,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     #[cfg(feature = "sqlite")]
     fn table_renaming_sqlite() {
         use crate::sqlite::Sqlite;

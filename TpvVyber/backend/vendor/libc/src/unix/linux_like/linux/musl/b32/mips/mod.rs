@@ -57,6 +57,14 @@ s! {
     }
 
     pub struct ipc_perm {
+        #[cfg(musl_v1_2_3)]
+        pub __key: crate::key_t,
+        #[cfg(not(musl_v1_2_3))]
+        #[deprecated(
+            since = "0.2.173",
+            note = "This field is incorrectly named and will be changed
+                to __key in a future release."
+        )]
         pub __ipc_perm_key: crate::key_t,
         pub uid: crate::uid_t,
         pub gid: crate::gid_t,
@@ -139,7 +147,6 @@ s! {
 }
 
 s_no_extra_traits! {
-    #[allow(missing_debug_implementations)]
     #[repr(align(8))]
     pub struct max_align_t {
         priv_: [f32; 4],
@@ -338,6 +345,7 @@ pub const SA_ONSTACK: c_int = 0x08000000;
 pub const SA_SIGINFO: c_int = 8;
 pub const SA_NOCLDWAIT: c_int = 0x10000;
 
+pub const SIGEMT: c_int = 7;
 pub const SIGCHLD: c_int = 18;
 pub const SIGBUS: c_int = 10;
 pub const SIGTTIN: c_int = 26;

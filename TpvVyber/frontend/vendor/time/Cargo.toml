@@ -11,9 +11,9 @@
 
 [package]
 edition = "2021"
-rust-version = "1.67.1"
+rust-version = "1.81.0"
 name = "time"
-version = "0.3.41"
+version = "0.3.44"
 authors = [
     "Jacob Pratt <open-source@jhpratt.dev>",
     "Time contributors",
@@ -49,8 +49,8 @@ repository = "https://github.com/time-rs/time"
 
 [package.metadata.docs.rs]
 all-features = true
-rustdoc-args = ["--generate-link-to-definition"]
 targets = ["x86_64-unknown-linux-gnu"]
+rustdoc-args = ["--generate-link-to-definition"]
 
 [features]
 alloc = ["serde?/alloc"]
@@ -74,8 +74,16 @@ quickcheck = [
     "deranged/quickcheck",
 ]
 rand = [
-    "dep:rand",
-    "deranged/rand",
+    "rand08",
+    "rand09",
+]
+rand08 = [
+    "dep:rand08",
+    "deranged/rand08",
+]
+rand09 = [
+    "dep:rand09",
+    "deranged/rand09",
 ]
 serde = [
     "dep:serde",
@@ -92,10 +100,7 @@ serde-well-known = [
     "formatting",
     "parsing",
 ]
-std = [
-    "alloc",
-    "deranged/std",
-]
+std = ["alloc"]
 wasm-bindgen = ["dep:js-sys"]
 
 [lib]
@@ -104,9 +109,8 @@ path = "src/lib.rs"
 bench = false
 
 [dependencies.deranged]
-version = "0.4.0"
+version = "0.5.2"
 features = ["powerfmt"]
-default-features = false
 
 [dependencies.itoa]
 version = "1.0.1"
@@ -124,10 +128,17 @@ version = "1.0.3"
 optional = true
 default-features = false
 
-[dependencies.rand]
+[dependencies.rand08]
 version = "0.8.4"
 optional = true
 default-features = false
+package = "rand"
+
+[dependencies.rand09]
+version = "0.9.2"
+optional = true
+default-features = false
+package = "rand"
 
 [dependencies.serde]
 version = "1.0.184"
@@ -135,10 +146,10 @@ optional = true
 default-features = false
 
 [dependencies.time-core]
-version = "=0.1.4"
+version = "=0.1.6"
 
 [dependencies.time-macros]
-version = "=0.2.22"
+version = "=0.2.24"
 optional = true
 
 [dev-dependencies.num-conv]
@@ -147,9 +158,15 @@ version = "0.1.0"
 [dev-dependencies.quickcheck_macros]
 version = "1.0.0"
 
-[dev-dependencies.rand]
+[dev-dependencies.rand08]
 version = "0.8.4"
 default-features = false
+package = "rand"
+
+[dev-dependencies.rand09]
+version = "0.9.2"
+default-features = false
+package = "rand"
 
 [dev-dependencies.rstest]
 version = "0.23.0"
@@ -170,7 +187,7 @@ version = "1.0.68"
 version = "1.0.126"
 
 [dev-dependencies.time-macros]
-version = "=0.2.22"
+version = "=0.2.24"
 
 [target."cfg(__ui_tests)".dev-dependencies.trybuild]
 version = "1.0.102"
@@ -217,6 +234,10 @@ use-debug = "warn"
 [lints.clippy.all]
 level = "warn"
 priority = -1
+
+[lints.clippy.incompatible-msrv]
+level = "allow"
+priority = 1
 
 [lints.clippy.nursery]
 level = "warn"

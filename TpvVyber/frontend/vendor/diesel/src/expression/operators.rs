@@ -217,7 +217,8 @@ macro_rules! __diesel_operator_to_sql {
 /// use diesel::expression::AsExpression;
 ///
 /// // Normally you would put this on a trait instead
-/// fn my_eq<T, U, ST>(left: T, right: U) -> MyEq<T, U::Expression> where
+/// fn my_eq<T, U, ST>(left: T, right: U) -> MyEq<T, U::Expression>
+/// where
 ///     T: Expression<SqlType = ST>,
 ///     U: AsExpression<ST>,
 ///     ST: SqlType + TypedExpressionType,
@@ -391,7 +392,6 @@ macro_rules! diesel_infix_operator {
 /// Similar to [`infix_operator!`], but the generated type will only take
 /// a single argument rather than two. The operator SQL will be placed after
 /// the single argument. See [`infix_operator!`] for example usage.
-///
 #[macro_export]
 macro_rules! postfix_operator {
     ($name:ident, $operator:expr) => {
@@ -400,6 +400,80 @@ macro_rules! postfix_operator {
 
     ($name:ident, $operator:expr, backend: $backend:ty) => {
         $crate::postfix_operator!($name, $operator, $crate::sql_types::Bool, backend: $backend);
+    };
+
+    ($name:ident, $operator:expr, ConditionalNullability $($return_ty:tt)::*) => {
+        $crate::postfix_operator!(
+            name = $name,
+            operator = $operator,
+            return_ty = NullableBasedOnArgs ($($return_ty)::*),
+        );
+    };
+
+    ($name:ident, $operator:expr, ConditionalNullability $($return_ty:tt)::*, backend: $backend:ty) => {
+        $crate::postfix_operator!(
+            $name,
+            $operator,
+            return_ty = NullableBasedOnArgs ($($return_ty)::*),
+            backend: $backend
+        );
+    };
+
+    ($name:ident, $operator:expr, return_ty = NullableBasedOnArgs($return_ty:ty)) => {
+        $crate::__diesel_operator_body!(
+            notation = postfix,
+            struct_name = $name,
+            operator = $operator,
+            return_ty = (
+                $crate::sql_types::is_nullable::MaybeNullable<
+                    <<Expr as $crate::expression::Expression>::SqlType as $crate::sql_types::SqlType>::IsNull,
+                    $return_ty
+                >
+            ),
+            ty_params = (Expr,),
+            field_names = (expr,),
+            backend_ty_params = (DB,),
+            backend_ty = DB,
+            expression_ty_params = (),
+            expression_bounds = (
+                Expr: $crate::expression::Expression,
+                <Expr as $crate::expression::Expression>::SqlType: $crate::sql_types::SqlType,
+                $crate::sql_types::is_nullable::IsOneNullable<
+                    <Expr as $crate::expression::Expression>::SqlType,
+                    $return_ty
+                >: $crate::sql_types::MaybeNullableType<$return_ty>,
+            ),
+        );
+    };
+
+    ($name:ident, $operator:expr, return_ty = NullableBasedOnArgs($return_ty:ty), backend: $backend:ty) => {
+        $crate::__diesel_operator_body!(
+            notation = postfix,
+            struct_name = $name,
+            operator = $operator,
+            return_ty = (
+                $crate::sql_types::is_nullable::MaybeNullable<
+                    $crate::sql_types::is_nullable::IsOneNullable<
+                        <Expr as $crate::expression::Expression>::SqlType,
+                        $return_ty
+                    >,
+                    $return_ty
+                >
+            ),
+            ty_params = (Expr,),
+            field_names = (expr,),
+            backend_ty_params = (),
+            backend_ty = $backend,
+            expression_ty_params = (),
+            expression_bounds = (
+                Expr: $crate::expression::Expression,
+                <Expr as $crate::expression::Expression>::SqlType: $crate::sql_types::SqlType,
+                $crate::sql_types::is_nullable::IsOneNullable<
+                    <Expr as $crate::expression::Expression>::SqlType,
+                    $return_ty
+                >: $crate::sql_types::MaybeNullableType<$return_ty>,
+            ),
+        );
     };
 
     ($name:ident, $operator:expr, $return_ty:ty) => {
@@ -445,7 +519,6 @@ macro_rules! diesel_postfix_operator {
 /// Similar to [`infix_operator!`], but the generated type will only take
 /// a single argument rather than two. The operator SQL will be placed before
 /// the single argument. See [`infix_operator!`] for example usage.
-///
 #[macro_export]
 macro_rules! prefix_operator {
     ($name:ident, $operator:expr) => {
@@ -745,20 +818,23 @@ where
 }
 
 #[diagnostic::on_unimplemented(
-    message = "Cannot use the `LIKE` operator with expressions of the type `{ST}` for the backend `{Self}`",
-    note = "Expressions of the type `diesel::sql_types::Text` and `diesel::sql_types::Nullable<Text>` are \n\
+    message = "cannot use the `LIKE` operator with expressions of the type `{ST}` for the backend `{Self}`",
+    note = "expressions of the type `diesel::sql_types::Text` and `diesel::sql_types::Nullable<Text>` are \n\
             allowed for all backends"
 )]
 #[cfg_attr(
     feature = "postgres_backend",
     diagnostic::on_unimplemented(
-        note = "Expressions of the type `diesel::sql_types::Binary` and `diesel::sql_types::Nullable<Binary>` are \n\
+        note = "expressions of the type `diesel::sql_types::Binary` and `diesel::sql_types::Nullable<Binary>` are \n\
             allowed for the PostgreSQL backend"
     )
 )]
 pub trait LikeIsAllowedForType<ST>: Backend {}
 
 impl<DB> LikeIsAllowedForType<crate::sql_types::Text> for DB where DB: Backend {}
+
+#[cfg(feature = "postgres_backend")]
+impl LikeIsAllowedForType<crate::pg::sql_types::Citext> for crate::pg::Pg {}
 
 impl<T, DB> LikeIsAllowedForType<crate::sql_types::Nullable<T>> for DB where
     DB: Backend + LikeIsAllowedForType<T>

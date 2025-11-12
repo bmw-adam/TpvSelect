@@ -11,14 +11,15 @@
 
 [package]
 edition = "2021"
-rust-version = "1.71.1"
+rust-version = "1.75"
 name = "bytestring"
-version = "1.4.0"
+version = "1.5.0"
 authors = [
     "Nikolay Kim <fafhrd91@gmail.com>",
     "Rob Ede <robjtede@icloud.com>",
 ]
 build = false
+autolib = false
 autobins = false
 autoexamples = false
 autotests = false
@@ -46,6 +47,9 @@ allowed_external_types = [
     "serde::*",
 ]
 
+[features]
+serde = ["dep:serde_core"]
+
 [lib]
 name = "bytestring"
 path = "src/lib.rs"
@@ -54,7 +58,7 @@ path = "src/lib.rs"
 version = "1.2"
 default-features = false
 
-[dependencies.serde]
+[dependencies.serde_core]
 version = "1"
 optional = true
 
@@ -67,3 +71,16 @@ version = "1"
 
 [dev-dependencies.static_assertions]
 version = "1.1"
+
+[lints.clippy]
+disallowed-names = "warn"
+uninlined-format-args = "warn"
+
+[lints.rust]
+future-incompatible = "deny"
+nonstandard-style = "deny"
+rust-2018-idioms = "deny"
+
+[lints.rust.missing-docs]
+level = "warn"
+priority = -1

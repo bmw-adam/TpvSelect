@@ -1,6 +1,6 @@
 [package]
 name = "hashbrown"
-version = "0.15.2"
+version = "0.16.0"
 authors = ["Amanieu d'Antras <amanieu@gmail.com>"]
 description = "A Rust port of Google's SwissTable hash map"
 license = "MIT OR Apache-2.0"
@@ -14,7 +14,7 @@ rust-version = "1.65.0"
 
 [dependencies]
 # For the default hasher
-foldhash = { version = "0.1.2", default-features = false, optional = true }
+foldhash = { version = "0.2.0", default-features = false, optional = true }
 
 # For external trait impls
 rayon = { version = "1.2", optional = true }
@@ -22,7 +22,6 @@ serde = { version = "1.0.25", default-features = false, optional = true }
 
 # When built as part of libstd
 core = { version = "1.0.0", optional = true, package = "rustc-std-workspace-core" }
-compiler_builtins = { version = "0.1.2", optional = true }
 alloc = { version = "1.0.0", optional = true, package = "rustc-std-workspace-alloc" }
 
 # Support for allocators that use allocator-api2
@@ -31,11 +30,12 @@ allocator-api2 = { version = "0.2.9", optional = true, default-features = false,
 ] }
 
 # Equivalent trait which can be shared with other hash table implementations.
+# NB: this is a public dependency because `Equivalent` is re-exported!
 equivalent = { version = "1.0", optional = true, default-features = false }
 
 [dev-dependencies]
 lazy_static = "1.4"
-rand = { version = "0.8.3", features = ["small_rng"] }
+rand = { version = "0.9.0", features = ["small_rng"] }
 rayon = "1.2"
 fnv = "1.0.7"
 serde_test = "1.0"
@@ -47,7 +47,7 @@ default = ["default-hasher", "inline-more", "allocator-api2", "equivalent", "raw
 
 # Enables use of nightly features. This is only guaranteed to work on the latest
 # version of nightly Rust.
-nightly = ["allocator-api2?/nightly", "bumpalo/allocator_api"]
+nightly = ["foldhash?/nightly", "bumpalo/allocator_api"]
 
 # Enables the RustcEntry API used to provide the standard library's Entry API.
 rustc-internal-api = []
@@ -56,10 +56,8 @@ rustc-internal-api = []
 rustc-dep-of-std = [
     "nightly",
     "core",
-    "compiler_builtins",
     "alloc",
     "rustc-internal-api",
-    "raw-entry",
 ]
 
 # Enables the deprecated RawEntry API.

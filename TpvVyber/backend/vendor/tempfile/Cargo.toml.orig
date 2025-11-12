@@ -1,6 +1,6 @@
 [package]
 name = "tempfile"
-version = "3.19.1"
+version = "3.23.0"
 authors = [
   "Steven Allen <steven@stebalien.com>",
   "The Rust Project Developers",
@@ -28,7 +28,7 @@ getrandom = { version = "0.3.0", default-features = false, optional = true }
 rustix = { version = "1.0.0", features = ["fs"] }
 
 [target.'cfg(windows)'.dependencies.windows-sys]
-version = ">=0.52,<0.60"
+version = ">=0.52, <0.62"
 features = [
     "Win32_Storage_FileSystem",
     "Win32_Foundation",
@@ -40,5 +40,6 @@ doc-comment = "0.3"
 [features]
 default = ["getrandom"]
 nightly = []
-# DEPRECATED unstable feature, will be removed in the near future.
-unstable-windows-keep-open-tempfile = []
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--generate-link-to-definition"]

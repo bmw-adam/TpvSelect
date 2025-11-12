@@ -151,7 +151,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 /// }
 ///
 /// fn main() {
-///     # #[allow(unused_variables)]
+///     # #[expect(unused_variables)]
 ///     let str_ts = OffsetDateTime::now_utc().format(DATE_TIME_FORMAT).unwrap();
 /// }
 /// ```
@@ -228,6 +228,7 @@ const DATE_FORMAT: &[BorrowedFormatItem<'_>] = &[
 ];
 
 impl Serialize for Date {
+    #[inline]
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         #[cfg(feature = "serde-human-readable")]
         if serializer.is_human_readable() {
@@ -242,6 +243,7 @@ impl Serialize for Date {
 }
 
 impl<'a> Deserialize<'a> for Date {
+    #[inline]
     fn deserialize<D: Deserializer<'a>>(deserializer: D) -> Result<Self, D::Error> {
         if cfg!(feature = "serde-human-readable") && deserializer.is_human_readable() {
             deserializer.deserialize_any(Visitor::<Self>(PhantomData))
@@ -252,6 +254,7 @@ impl<'a> Deserialize<'a> for Date {
 }
 
 impl Serialize for Duration {
+    #[inline]
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         #[cfg(feature = "serde-human-readable")]
         if serializer.is_human_readable() {
@@ -268,6 +271,7 @@ impl Serialize for Duration {
 }
 
 impl<'a> Deserialize<'a> for Duration {
+    #[inline]
     fn deserialize<D: Deserializer<'a>>(deserializer: D) -> Result<Self, D::Error> {
         if cfg!(feature = "serde-human-readable") && deserializer.is_human_readable() {
             deserializer.deserialize_any(Visitor::<Self>(PhantomData))
@@ -288,6 +292,7 @@ const OFFSET_DATE_TIME_FORMAT: &[BorrowedFormatItem<'_>] = &[
 ];
 
 impl Serialize for OffsetDateTime {
+    #[inline]
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         #[cfg(feature = "serde-human-readable")]
         if serializer.is_human_readable() {
@@ -313,6 +318,7 @@ impl Serialize for OffsetDateTime {
 }
 
 impl<'a> Deserialize<'a> for OffsetDateTime {
+    #[inline]
     fn deserialize<D: Deserializer<'a>>(deserializer: D) -> Result<Self, D::Error> {
         if cfg!(feature = "serde-human-readable") && deserializer.is_human_readable() {
             deserializer.deserialize_any(Visitor::<Self>(PhantomData))
@@ -331,6 +337,7 @@ const PRIMITIVE_DATE_TIME_FORMAT: &[BorrowedFormatItem<'_>] = &[
 ];
 
 impl Serialize for PrimitiveDateTime {
+    #[inline]
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         #[cfg(feature = "serde-human-readable")]
         if serializer.is_human_readable() {
@@ -353,6 +360,7 @@ impl Serialize for PrimitiveDateTime {
 }
 
 impl<'a> Deserialize<'a> for PrimitiveDateTime {
+    #[inline]
     fn deserialize<D: Deserializer<'a>>(deserializer: D) -> Result<Self, D::Error> {
         if cfg!(feature = "serde-human-readable") && deserializer.is_human_readable() {
             deserializer.deserialize_any(Visitor::<Self>(PhantomData))
@@ -367,6 +375,7 @@ impl<'a> Deserialize<'a> for PrimitiveDateTime {
 const UTC_DATE_TIME_FORMAT: &[BorrowedFormatItem<'_>] = PRIMITIVE_DATE_TIME_FORMAT;
 
 impl Serialize for UtcDateTime {
+    #[inline]
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         #[cfg(feature = "serde-human-readable")]
         if serializer.is_human_readable() {
@@ -389,6 +398,7 @@ impl Serialize for UtcDateTime {
 }
 
 impl<'a> Deserialize<'a> for UtcDateTime {
+    #[inline]
     fn deserialize<D: Deserializer<'a>>(deserializer: D) -> Result<Self, D::Error> {
         if cfg!(feature = "serde-human-readable") && deserializer.is_human_readable() {
             deserializer.deserialize_any(Visitor::<Self>(PhantomData))
@@ -411,6 +421,7 @@ const TIME_FORMAT: &[BorrowedFormatItem<'_>] = &[
 ];
 
 impl Serialize for Time {
+    #[inline]
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         #[cfg(feature = "serde-human-readable")]
         if serializer.is_human_readable() {
@@ -425,6 +436,7 @@ impl Serialize for Time {
 }
 
 impl<'a> Deserialize<'a> for Time {
+    #[inline]
     fn deserialize<D: Deserializer<'a>>(deserializer: D) -> Result<Self, D::Error> {
         if cfg!(feature = "serde-human-readable") && deserializer.is_human_readable() {
             deserializer.deserialize_any(Visitor::<Self>(PhantomData))
@@ -434,32 +446,32 @@ impl<'a> Deserialize<'a> for Time {
     }
 }
 
-// FIXME: turn these constants into `const { ... }` blocks once we can depend on Rust 1.79.
-#[cfg(feature = "parsing")]
-const UTC_OFFSET_HOUR: modifier::OffsetHour = {
-    let mut m = modifier::OffsetHour::default();
-    m.sign_is_mandatory = true;
-    m
-};
-#[cfg(feature = "parsing")]
-const UTC_OFFSET_MINUTE: modifier::OffsetMinute = modifier::OffsetMinute::default();
-#[cfg(feature = "parsing")]
-const UTC_OFFSET_SECOND: modifier::OffsetSecond = modifier::OffsetSecond::default();
 /// The format used when serializing and deserializing a human-readable `UtcOffset`.
 #[cfg(feature = "parsing")]
 const UTC_OFFSET_FORMAT: &[BorrowedFormatItem<'_>] = &[
-    BorrowedFormatItem::Component(Component::OffsetHour(UTC_OFFSET_HOUR)),
+    BorrowedFormatItem::Component(Component::OffsetHour(
+        const {
+            let mut m = modifier::OffsetHour::default();
+            m.sign_is_mandatory = true;
+            m
+        },
+    )),
     BorrowedFormatItem::Optional(&BorrowedFormatItem::Compound(&[
         BorrowedFormatItem::Literal(b":"),
-        BorrowedFormatItem::Component(Component::OffsetMinute(UTC_OFFSET_MINUTE)),
+        BorrowedFormatItem::Component(Component::OffsetMinute(
+            const { modifier::OffsetMinute::default() },
+        )),
         BorrowedFormatItem::Optional(&BorrowedFormatItem::Compound(&[
             BorrowedFormatItem::Literal(b":"),
-            BorrowedFormatItem::Component(Component::OffsetSecond(UTC_OFFSET_SECOND)),
+            BorrowedFormatItem::Component(Component::OffsetSecond(
+                const { modifier::OffsetSecond::default() },
+            )),
         ])),
     ])),
 ];
 
 impl Serialize for UtcOffset {
+    #[inline]
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         #[cfg(feature = "serde-human-readable")]
         if serializer.is_human_readable() {
@@ -479,6 +491,7 @@ impl Serialize for UtcOffset {
 }
 
 impl<'a> Deserialize<'a> for UtcOffset {
+    #[inline]
     fn deserialize<D: Deserializer<'a>>(deserializer: D) -> Result<Self, D::Error> {
         if cfg!(feature = "serde-human-readable") && deserializer.is_human_readable() {
             deserializer.deserialize_any(Visitor::<Self>(PhantomData))
@@ -489,6 +502,7 @@ impl<'a> Deserialize<'a> for UtcOffset {
 }
 
 impl Serialize for Weekday {
+    #[inline]
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         #[cfg(feature = "serde-human-readable")]
         if serializer.is_human_readable() {
@@ -502,6 +516,7 @@ impl Serialize for Weekday {
 }
 
 impl<'a> Deserialize<'a> for Weekday {
+    #[inline]
     fn deserialize<D: Deserializer<'a>>(deserializer: D) -> Result<Self, D::Error> {
         if cfg!(feature = "serde-human-readable") && deserializer.is_human_readable() {
             deserializer.deserialize_any(Visitor::<Self>(PhantomData))
@@ -512,6 +527,7 @@ impl<'a> Deserialize<'a> for Weekday {
 }
 
 impl Serialize for Month {
+    #[inline]
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         #[cfg(feature = "serde-human-readable")]
         if serializer.is_human_readable() {
@@ -525,6 +541,7 @@ impl Serialize for Month {
 }
 
 impl<'a> Deserialize<'a> for Month {
+    #[inline]
     fn deserialize<D: Deserializer<'a>>(deserializer: D) -> Result<Self, D::Error> {
         if cfg!(feature = "serde-human-readable") && deserializer.is_human_readable() {
             deserializer.deserialize_any(Visitor::<Self>(PhantomData))

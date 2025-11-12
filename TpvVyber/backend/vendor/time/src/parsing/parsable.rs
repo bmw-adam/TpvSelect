@@ -32,7 +32,6 @@ impl<T: Deref> Parsable for T where T::Target: Parsable {}
 /// Seal the trait to prevent downstream users from implementing it, while still allowing it to
 /// exist in generic bounds.
 mod sealed {
-    #[allow(clippy::wildcard_imports)]
     use super::*;
     use crate::{PrimitiveDateTime, UtcDateTime};
 
@@ -51,6 +50,7 @@ mod sealed {
         ///
         /// This method can only be used to parse a complete value of a type. If any characters
         /// remain after parsing, an error will be returned.
+        #[inline]
         fn parse(&self, input: &[u8]) -> Result<Parsed, error::Parse> {
             let mut parsed = Parsed::new();
             if self.parse_into(input, &mut parsed)?.is_empty() {
@@ -63,21 +63,25 @@ mod sealed {
         }
 
         /// Parse a [`Date`] from the format description.
+        #[inline]
         fn parse_date(&self, input: &[u8]) -> Result<Date, error::Parse> {
             Ok(self.parse(input)?.try_into()?)
         }
 
         /// Parse a [`Time`] from the format description.
+        #[inline]
         fn parse_time(&self, input: &[u8]) -> Result<Time, error::Parse> {
             Ok(self.parse(input)?.try_into()?)
         }
 
         /// Parse a [`UtcOffset`] from the format description.
+        #[inline]
         fn parse_offset(&self, input: &[u8]) -> Result<UtcOffset, error::Parse> {
             Ok(self.parse(input)?.try_into()?)
         }
 
         /// Parse a [`PrimitiveDateTime`] from the format description.
+        #[inline]
         fn parse_primitive_date_time(
             &self,
             input: &[u8],
@@ -86,11 +90,13 @@ mod sealed {
         }
 
         /// Parse a [`UtcDateTime`] from the format description.
+        #[inline]
         fn parse_utc_date_time(&self, input: &[u8]) -> Result<UtcDateTime, error::Parse> {
             Ok(self.parse(input)?.try_into()?)
         }
 
         /// Parse a [`OffsetDateTime`] from the format description.
+        #[inline]
         fn parse_offset_date_time(&self, input: &[u8]) -> Result<OffsetDateTime, error::Parse> {
             Ok(self.parse(input)?.try_into()?)
         }
@@ -98,6 +104,7 @@ mod sealed {
 }
 
 impl sealed::Sealed for BorrowedFormatItem<'_> {
+    #[inline]
     fn parse_into<'a>(
         &self,
         input: &'a [u8],
@@ -108,6 +115,7 @@ impl sealed::Sealed for BorrowedFormatItem<'_> {
 }
 
 impl sealed::Sealed for [BorrowedFormatItem<'_>] {
+    #[inline]
     fn parse_into<'a>(
         &self,
         input: &'a [u8],
@@ -119,6 +127,7 @@ impl sealed::Sealed for [BorrowedFormatItem<'_>] {
 
 #[cfg(feature = "alloc")]
 impl sealed::Sealed for OwnedFormatItem {
+    #[inline]
     fn parse_into<'a>(
         &self,
         input: &'a [u8],
@@ -130,6 +139,7 @@ impl sealed::Sealed for OwnedFormatItem {
 
 #[cfg(feature = "alloc")]
 impl sealed::Sealed for [OwnedFormatItem] {
+    #[inline]
     fn parse_into<'a>(
         &self,
         input: &'a [u8],
@@ -139,10 +149,11 @@ impl sealed::Sealed for [OwnedFormatItem] {
     }
 }
 
-impl<T: Deref> sealed::Sealed for T
+impl<T> sealed::Sealed for T
 where
-    T::Target: sealed::Sealed,
+    T: Deref<Target: sealed::Sealed>,
 {
+    #[inline]
     fn parse_into<'a>(
         &self,
         input: &'a [u8],
@@ -259,7 +270,10 @@ impl sealed::Sealed for Rfc2822 {
         // The RFC explicitly allows leap seconds.
         parsed.leap_second_allowed = true;
 
-        #[allow(clippy::unnecessary_lazy_evaluations)] // rust-lang/rust-clippy#8522
+        #[expect(
+            clippy::unnecessary_lazy_evaluations,
+            reason = "rust-lang/rust-clippy#8522"
+        )]
         let zone_literal = first_match(
             [
                 (b"UT".as_slice(), 0),
@@ -408,7 +422,10 @@ impl sealed::Sealed for Rfc2822 {
             (cfws(input).ok_or(InvalidLiteral)?.into_inner(), 0)
         };
 
-        #[allow(clippy::unnecessary_lazy_evaluations)] // rust-lang/rust-clippy#8522
+        #[expect(
+            clippy::unnecessary_lazy_evaluations,
+            reason = "rust-lang/rust-clippy#8522"
+        )]
         let zone_literal = first_match(
             [
                 (b"UT".as_slice(), 0),
@@ -740,6 +757,7 @@ impl sealed::Sealed for Rfc3339 {
 }
 
 impl<const CONFIG: EncodedConfig> sealed::Sealed for Iso8601<CONFIG> {
+    #[inline]
     fn parse_into<'a>(
         &self,
         mut input: &'a [u8],

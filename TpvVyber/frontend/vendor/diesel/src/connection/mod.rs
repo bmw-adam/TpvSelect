@@ -37,13 +37,23 @@ pub(crate) use self::private::ConnectionSealed;
 pub use self::private::MultiConnectionHelper;
 
 #[cfg(feature = "i-implement-a-third-party-backend-and-opt-into-breaking-changes")]
-pub use self::instrumentation::StrQueryHelper;
+pub use self::instrumentation::{DynInstrumentation, StrQueryHelper};
 
 #[cfg(all(
     not(feature = "i-implement-a-third-party-backend-and-opt-into-breaking-changes"),
     any(feature = "sqlite", feature = "postgres", feature = "mysql")
 ))]
 pub(crate) use self::private::MultiConnectionHelper;
+
+/// Set cache size for a connection
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum CacheSize {
+    /// Caches all queries if possible
+    Unbounded,
+    /// Disable statement cache
+    Disabled,
+}
 
 /// Perform simple operations on a backend.
 ///
@@ -367,10 +377,12 @@ where
     {
         let mut user_result = None;
         let _ = self.transaction::<(), _, _>(|conn| {
-            user_result = f(conn).ok();
+            user_result = Some(f(conn));
             Err(Error::RollbackTransaction)
         });
-        user_result.expect("Transaction did not succeed")
+        user_result
+            .expect("Transaction never executed")
+            .unwrap_or_else(|e| panic!("Transaction did not succeed: {:?}", e))
     }
 
     /// Execute a single SQL statements given by a query and return
@@ -401,6 +413,9 @@ where
 
     /// Set a specific [`Instrumentation`] implementation for this connection
     fn set_instrumentation(&mut self, instrumentation: impl Instrumentation);
+
+    /// Set the prepared statement cache size to [`CacheSize`] for this connection
+    fn set_prepared_statement_cache_size(&mut self, size: CacheSize);
 }
 
 /// The specific part of a [`Connection`] which actually loads data from the database
@@ -550,7 +565,7 @@ pub(crate) mod private {
 
     /// This trait restricts who can implement `Connection`
     #[cfg_attr(
-        docsrs,
+        diesel_docsrs,
         doc(cfg(feature = "i-implement-a-third-party-backend-and-opt-into-breaking-changes"))
     )]
     pub trait ConnectionSealed {}
@@ -559,7 +574,7 @@ pub(crate) mod private {
     /// to/from an `std::any::Any` reference. This is used internally by the `#[derive(MultiConnection)]`
     /// implementation
     #[cfg_attr(
-        docsrs,
+        diesel_docsrs,
         doc(cfg(feature = "i-implement-a-third-party-backend-and-opt-into-breaking-changes"))
     )]
     pub trait MultiConnectionHelper: super::Connection {

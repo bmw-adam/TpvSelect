@@ -101,14 +101,14 @@ impl PgTypeMetadata {
     /// The [OID] of `T`
     ///
     /// [OID]: https://www.postgresql.org/docs/current/static/datatype-oid.html
-    pub fn oid(&self) -> Result<u32, impl std::error::Error + Send + Sync> {
+    pub fn oid(&self) -> Result<u32, impl std::error::Error + Send + Sync + use<>> {
         self.0.as_ref().map(|i| i.oid).map_err(Clone::clone)
     }
 
     /// The [OID] of `T[]`
     ///
     /// [OID]: https://www.postgresql.org/docs/current/static/datatype-oid.html
-    pub fn array_oid(&self) -> Result<u32, impl std::error::Error + Send + Sync> {
+    pub fn array_oid(&self) -> Result<u32, impl std::error::Error + Send + Sync + use<>> {
         self.0.as_ref().map(|i| i.array_oid).map_err(Clone::clone)
     }
 }
@@ -141,6 +141,15 @@ impl SqlDialect for Pg {
     type ExistsSyntax = sql_dialect::exists_syntax::AnsiSqlExistsSyntax;
     type ArrayComparison = PgStyleArrayComparison;
     type AliasSyntax = sql_dialect::alias_syntax::AsAliasSyntax;
+    type WindowFrameClauseGroupSupport =
+        sql_dialect::window_frame_clause_group_support::IsoGroupWindowFrameUnit;
+    type WindowFrameExclusionSupport =
+        sql_dialect::window_frame_exclusion_support::FrameExclusionSupport;
+    type AggregateFunctionExpressions =
+        sql_dialect::aggregate_function_expressions::PostgresLikeAggregateFunctionExpressions;
+
+    type BuiltInWindowFunctionRequireOrder =
+        sql_dialect::built_in_window_function_require_order::NoOrderRequired;
 }
 
 impl DieselReserveSpecialization for Pg {}
@@ -157,3 +166,20 @@ impl sql_dialect::on_conflict_clause::PgLikeOnConflictClause for PgOnConflictCla
 pub struct PgStyleArrayComparison;
 
 impl LikeIsAllowedForType<crate::sql_types::Binary> for Pg {}
+
+// Using the same field names as tokio-postgres
+/// See Postgres documentation for SQL Commands NOTIFY and LISTEN
+#[derive(Clone, Debug)]
+pub struct PgNotification {
+    /// process ID of notifying server process
+    pub process_id: i32,
+    /// Name of the notification channel
+    pub channel: String,
+    /// optional data that was submitted with the notification,
+    ///
+    /// This is set to an empty string if no data was submitted
+    ///
+    /// (Postgres unfortunally does not provide a way to differentiate between
+    /// not set and empty here)
+    pub payload: String,
+}

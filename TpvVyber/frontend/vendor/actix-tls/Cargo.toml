@@ -11,13 +11,19 @@
 
 [package]
 edition = "2021"
-rust-version = "1.70"
+rust-version = "1.76"
 name = "actix-tls"
-version = "3.4.0"
+version = "3.5.0"
 authors = [
     "Nikolay Kim <fafhrd91@gmail.com>",
     "Rob Ede <robjtede@icloud.com>",
 ]
+build = false
+autolib = false
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
 description = "TLS acceptor and connector services for Actix ecosystem"
 readme = "README.md"
 keywords = [
@@ -35,10 +41,11 @@ categories = [
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/actix/actix-net.git"
 
-[package.metadata.cargo-machete]
-ignored = [
-    "rustls_021",
-    "rustls_webpki_0101",
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = [
+    "--cfg",
+    "docsrs",
 ]
 
 [package.metadata.cargo_check_external_types]
@@ -49,19 +56,99 @@ allowed_external_types = [
     "tokio::*",
 ]
 
-[package.metadata.docs.rs]
-all-features = true
-rustdoc-args = [
-    "--cfg",
-    "docsrs",
+[package.metadata.cargo-machete]
+ignored = [
+    "rustls_021",
+    "rustls_webpki_0101",
 ]
+
+[features]
+accept = []
+connect = []
+default = [
+    "accept",
+    "connect",
+]
+native-tls = ["dep:tokio-native-tls"]
+openssl = [
+    "dep:tls-openssl",
+    "dep:tokio-openssl",
+]
+rustls = ["rustls-0_20"]
+rustls-0_20 = ["rustls-0_20-webpki-roots"]
+rustls-0_20-native-roots = [
+    "tokio-rustls-023",
+    "dep:rustls-native-certs-06",
+]
+rustls-0_20-webpki-roots = [
+    "tokio-rustls-023",
+    "webpki-roots-022",
+]
+rustls-0_21 = ["rustls-0_21-webpki-roots"]
+rustls-0_21-native-roots = [
+    "tokio-rustls-024",
+    "dep:rustls-native-certs-06",
+]
+rustls-0_21-webpki-roots = [
+    "tokio-rustls-024",
+    "webpki-roots-025",
+]
+rustls-0_22 = [
+    "dep:tokio-rustls-025",
+    "dep:rustls-pki-types-1",
+]
+rustls-0_22-native-roots = [
+    "rustls-0_22",
+    "dep:rustls-native-certs-08",
+]
+rustls-0_22-webpki-roots = [
+    "rustls-0_22",
+    "dep:webpki-roots-026",
+]
+rustls-0_23 = [
+    "dep:tokio-rustls-026",
+    "dep:rustls-pki-types-1",
+]
+rustls-0_23-native-roots = [
+    "rustls-0_23",
+    "dep:rustls-native-certs-08",
+]
+rustls-0_23-webpki-roots = [
+    "rustls-0_23",
+    "dep:webpki-roots-026",
+]
+uri = [
+    "dep:http-0_2",
+    "dep:http-1",
+]
+
+[lib]
+name = "actix_tls"
+path = "src/lib.rs"
 
 [[example]]
 name = "accept-rustls"
+path = "examples/accept-rustls.rs"
 required-features = [
     "accept",
     "rustls-0_23",
 ]
+
+[[test]]
+name = "accept-openssl"
+path = "tests/accept-openssl.rs"
+
+[[test]]
+name = "accept-rustls"
+path = "tests/accept-rustls.rs"
+
+[[test]]
+name = "test_connect"
+path = "tests/test_connect.rs"
+
+[[test]]
+name = "test_resolvers"
+path = "tests/test_resolvers.rs"
 
 [dependencies.actix-rt]
 version = "2.2"
@@ -99,8 +186,8 @@ version = "0.6"
 optional = true
 package = "rustls-native-certs"
 
-[dependencies.rustls-native-certs-07]
-version = "0.7"
+[dependencies.rustls-native-certs-08]
+version = "0.8"
 optional = true
 package = "rustls-native-certs"
 
@@ -115,7 +202,7 @@ optional = true
 package = "openssl"
 
 [dependencies.tokio]
-version = "1.23.1"
+version = "1.44.2"
 
 [dependencies.tokio-native-tls]
 version = "0.3"
@@ -186,14 +273,17 @@ version = "0.3.17"
 features = ["sink"]
 default-features = false
 
+[dev-dependencies.hickory-resolver]
+version = "0.25"
+
 [dev-dependencies.itertools]
-version = "0.12"
+version = "0.14"
 
 [dev-dependencies.pretty_env_logger]
 version = "0.5"
 
 [dev-dependencies.rcgen]
-version = "0.12"
+version = "0.13"
 
 [dev-dependencies.rustls-pemfile]
 version = "2"
@@ -201,69 +291,6 @@ version = "2"
 [dev-dependencies.tokio-rustls-026]
 version = "0.26"
 package = "tokio-rustls"
-
-[dev-dependencies.trust-dns-resolver]
-version = "0.23"
-
-[features]
-accept = []
-connect = []
-default = [
-    "accept",
-    "connect",
-]
-native-tls = ["dep:tokio-native-tls"]
-openssl = [
-    "dep:tls-openssl",
-    "dep:tokio-openssl",
-]
-rustls = ["rustls-0_20"]
-rustls-0_20 = ["rustls-0_20-webpki-roots"]
-rustls-0_20-native-roots = [
-    "tokio-rustls-023",
-    "dep:rustls-native-certs-06",
-]
-rustls-0_20-webpki-roots = [
-    "tokio-rustls-023",
-    "webpki-roots-022",
-]
-rustls-0_21 = ["rustls-0_21-webpki-roots"]
-rustls-0_21-native-roots = [
-    "tokio-rustls-024",
-    "dep:rustls-native-certs-06",
-]
-rustls-0_21-webpki-roots = [
-    "tokio-rustls-024",
-    "webpki-roots-025",
-]
-rustls-0_22 = [
-    "dep:tokio-rustls-025",
-    "dep:rustls-pki-types-1",
-]
-rustls-0_22-native-roots = [
-    "rustls-0_22",
-    "dep:rustls-native-certs-07",
-]
-rustls-0_22-webpki-roots = [
-    "rustls-0_22",
-    "dep:webpki-roots-026",
-]
-rustls-0_23 = [
-    "dep:tokio-rustls-026",
-    "dep:rustls-pki-types-1",
-]
-rustls-0_23-native-roots = [
-    "rustls-0_23",
-    "dep:rustls-native-certs-07",
-]
-rustls-0_23-webpki-roots = [
-    "rustls-0_23",
-    "dep:webpki-roots-026",
-]
-uri = [
-    "dep:http-0_2",
-    "dep:http-1",
-]
 
 [target."cfg(any())".dependencies.rustls-021]
 version = "0.21.6"
@@ -274,3 +301,16 @@ package = "rustls"
 version = "0.101.4"
 optional = true
 package = "rustls-webpki"
+
+[lints.clippy]
+disallowed-names = "warn"
+uninlined-format-args = "warn"
+
+[lints.rust]
+future-incompatible = "deny"
+nonstandard-style = "deny"
+rust-2018-idioms = "deny"
+
+[lints.rust.missing-docs]
+level = "warn"
+priority = -1

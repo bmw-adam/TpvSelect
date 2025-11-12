@@ -16,7 +16,7 @@ links = "zstd"
 name = "zstd-sys"
 readme = "Readme.md"
 repository = "https://github.com/gyscos/zstd-rs"
-version = "2.0.15+zstd.1.5.7"
+version = "2.0.16+zstd.1.5.7"
 edition = "2018"
 rust-version = "1.64"
 
@@ -53,9 +53,9 @@ doctest = false  # Documentation is for C code, good luck testing that.
 
 [build-dependencies.bindgen]
 optional = true
-version = "0.71"
+version = "0.72"
 default-features = false
-features = ["runtime", "which-rustfmt"]
+features = ["runtime"]
 
 [build-dependencies.pkg-config]
 version = "0.3.28"

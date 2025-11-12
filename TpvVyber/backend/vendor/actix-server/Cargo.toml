@@ -11,9 +11,9 @@
 
 [package]
 edition = "2021"
-rust-version = "1.71.1"
+rust-version = "1.74"
 name = "actix-server"
-version = "2.5.1"
+version = "2.6.0"
 authors = [
     "Nikolay Kim <fafhrd91@gmail.com>",
     "Rob Ede <robjtede@icloud.com>",
@@ -61,6 +61,10 @@ name = "file-reader"
 path = "examples/file-reader.rs"
 
 [[example]]
+name = "shutdown-signal"
+path = "examples/shutdown-signal.rs"
+
+[[example]]
 name = "tcp-echo"
 path = "examples/tcp-echo.rs"
 
@@ -103,7 +107,7 @@ features = [
 version = "0.5"
 
 [dependencies.tokio]
-version = "1.23.1"
+version = "1.44.2"
 features = ["sync"]
 
 [dependencies.tracing]
@@ -131,13 +135,27 @@ default-features = false
 [dev-dependencies.pretty_env_logger]
 version = "0.5"
 
+[dev-dependencies.static_assertions]
+version = "1"
+
 [dev-dependencies.tokio]
-version = "1.23.1"
+version = "1.44.2"
 features = [
     "io-util",
     "rt-multi-thread",
     "macros",
     "fs",
+    "time",
+]
+
+[dev-dependencies.tokio-util]
+version = "0.7"
+
+[dev-dependencies.tracing-subscriber]
+version = "0.3"
+features = [
+    "fmt",
+    "env-filter",
 ]
 
 [target.'cfg(target_os = "linux")'.dependencies.tokio-uring]

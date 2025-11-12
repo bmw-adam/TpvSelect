@@ -32,9 +32,12 @@ impl<T> Clone for LazyData<T> {
 
 impl<T: fmt::Debug> fmt::Debug for LazyData<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Lazy")
-            .field("cell", &self.inner.cell)
-            .field("fut", &"..")
+        let Self { inner } = self;
+        let LazyDataInner { cell, fut: _ } = &**inner;
+
+        f.debug_struct("LazyData")
+            .field("cell", &cell)
+            .field("fut", &"<impl Future>")
             .finish()
     }
 }

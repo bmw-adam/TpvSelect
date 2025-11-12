@@ -18,6 +18,7 @@ pub struct Field {
     pub select_expression_type: Option<AttributeSpanWrapper<Type>>,
     pub embed: Option<AttributeSpanWrapper<bool>>,
     pub skip_insertion: Option<AttributeSpanWrapper<bool>>,
+    pub skip_update: Option<AttributeSpanWrapper<bool>>,
 }
 
 impl Field {
@@ -32,6 +33,7 @@ impl Field {
         let mut deserialize_as = None;
         let mut embed = None;
         let mut skip_insertion = None;
+        let mut skip_update = None;
         let mut select_expression = None;
         let mut select_expression_type = None;
         let mut treat_none_as_default_value = None;
@@ -111,6 +113,13 @@ impl Field {
                         ident_span,
                     })
                 }
+                FieldAttr::SkipUpdate(_) => {
+                    skip_update = Some(AttributeSpanWrapper {
+                        item: true,
+                        attribute_span,
+                        ident_span,
+                    })
+                }
             }
         }
 
@@ -118,11 +127,11 @@ impl Field {
             Some(x) => FieldName::Named(x),
             None => FieldName::Unnamed(index.into()),
         };
-
         let span = match name {
             FieldName::Named(ref ident) => ident.span(),
             FieldName::Unnamed(_) => ty.span(),
         };
+        let span = Span::mixed_site().located_at(span);
 
         Ok(Self {
             ty: ty.clone(),
@@ -138,6 +147,7 @@ impl Field {
             select_expression_type,
             embed,
             skip_insertion,
+            skip_update,
         })
     }
 
@@ -150,7 +160,7 @@ impl Field {
                 FieldName::Named(ref x) => Ok(x.into()),
                 FieldName::Unnamed(ref x) => Err(syn::Error::new(
                     x.span(),
-                    "All fields of tuple structs must be annotated with `#[diesel(column_name)]`",
+                    "all fields of tuple structs must be annotated with `#[diesel(column_name)]`",
                 )),
             }
         }
@@ -173,6 +183,10 @@ impl Field {
             .as_ref()
             .map(|a| a.item)
             .unwrap_or(false)
+    }
+
+    pub(crate) fn skip_update(&self) -> bool {
+        self.skip_update.as_ref().map(|a| a.item).unwrap_or(false)
     }
 }
 

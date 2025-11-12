@@ -37,6 +37,7 @@ pub(crate) mod nullable;
 #[macro_use]
 pub(crate) mod operators;
 mod case_when;
+pub(crate) mod cast;
 pub(crate) mod select_by;
 mod sql_literal;
 pub(crate) mod subselect;
@@ -65,6 +66,8 @@ pub(crate) mod dsl {
     #[doc(inline)]
     pub use super::functions::date_and_time::*;
     #[doc(inline)]
+    pub use super::functions::window_functions::*;
+    #[doc(inline)]
     pub use super::helper_types::{case_when, IntoSql, Otherwise, When};
     #[doc(inline)]
     pub use super::not::not;
@@ -74,13 +77,18 @@ pub(crate) mod dsl {
     #[cfg(feature = "postgres_backend")]
     pub use crate::pg::expression::dsl::*;
 
+    #[cfg(feature = "sqlite")]
+    pub use crate::sqlite::expression::dsl::*;
+
     /// The return type of [`count(expr)`](crate::dsl::count())
     pub type count<Expr> = super::count::count<SqlTypeOf<Expr>, Expr>;
 
     /// The return type of [`count_star()`](crate::dsl::count_star())
     pub type count_star = super::count::CountStar;
 
-    /// The return type of [`count_distinct()`](crate::dsl::count_distinct())
+    #[cfg(all(feature = "with-deprecated", not(feature = "without-deprecated")))]
+    #[deprecated]
+    #[doc(hidden)]
     pub type count_distinct<Expr> = super::count::CountDistinct<SqlTypeOf<Expr>, Expr>;
 
     /// The return type of [`date(expr)`](crate::dsl::date())
@@ -88,10 +96,24 @@ pub(crate) mod dsl {
 
     #[cfg(feature = "mysql_backend")]
     pub use crate::mysql::query_builder::DuplicatedKeys;
+
+    pub use super::functions::aggregate_expressions::frame_clause::{
+        FrameBoundDsl, FrameClauseDsl,
+    };
+
+    /// Different frame clause specifications for window functions
+    pub mod frame {
+        pub use super::super::functions::aggregate_expressions::frame_clause::{
+            CurrentRow, ExcludeCurrentRow, ExcludeGroup, ExcludeNoOthers, ExcludeTies, Groups,
+            Range, Rows, UnboundedFollowing, UnboundedPreceding,
+        };
+    }
 }
 
 #[doc(inline)]
 pub use self::case_when::CaseWhen;
+#[doc(inline)]
+pub use self::cast::{CastsTo, FallibleCastsTo, KnownCastSqlTypeName};
 #[doc(inline)]
 pub use self::sql_literal::{SqlLiteral, UncheckedBind};
 
@@ -112,11 +134,9 @@ pub trait Expression {
 }
 
 /// Marker trait for possible types of [`Expression::SqlType`]
-///
 pub trait TypedExpressionType {}
 
 /// Possible types for []`Expression::SqlType`]
-///
 pub mod expression_types {
     use super::{QueryMetadata, TypedExpressionType};
     use crate::backend::Backend;
@@ -131,14 +151,16 @@ pub mod expression_types {
     /// For loading values from queries returning a type of this expression, consider
     /// using [`#[derive(QueryableByName)]`](derive@crate::deserialize::QueryableByName)
     /// on the corresponding result type.
-    ///
     #[derive(Clone, Copy, Debug)]
     pub struct Untyped;
 
-    /// Query nodes witch cannot be part of a select clause.
+    /// Query nodes which cannot be part of a select clause.
     ///
     /// If you see an error message containing `FromSqlRow` and this type
     /// recheck that you have written a valid select clause
+    ///
+    /// These may notably be used as intermediate Expression nodes of the query builder
+    /// which do not map to actual SQL expressions (for implementation simplicity).
     #[derive(Debug, Clone, Copy)]
     pub struct NotSelectable;
 
@@ -319,7 +341,7 @@ where
 /// join. To select a column or expression using a column from the right side of
 /// a left join, you must call `.nullable()` on it.
 #[diagnostic::on_unimplemented(
-    message = "Cannot select `{Self}` from `{QS}`",
+    message = "cannot select `{Self}` from `{QS}`",
     note = "`{Self}` is no valid selection for `{QS}`"
 )]
 pub trait SelectableExpression<QS: ?Sized>: AppearsOnTable<QS> {}
@@ -374,7 +396,10 @@ where
 /// #     use schema::users::dsl::*;
 /// #     let connection = &mut establish_connection();
 /// let first_user = users.select(User::as_select()).first(connection)?;
-/// let expected = User { id: 1, name: "Sean".into() };
+/// let expected = User {
+///     id: 1,
+///     name: "Sean".into(),
+/// };
 /// assert_eq!(expected, first_user);
 /// #     Ok(())
 /// # }
@@ -385,9 +410,9 @@ where
 /// ```rust
 /// # include!("../doctest_setup.rs");
 /// #
-/// use schema::users;
-/// use diesel::prelude::{Queryable, Selectable};
 /// use diesel::backend::Backend;
+/// use diesel::prelude::{Queryable, Selectable};
+/// use schema::users;
 ///
 /// #[derive(Queryable, PartialEq, Debug)]
 /// struct User {
@@ -397,7 +422,7 @@ where
 ///
 /// impl<DB> Selectable<DB> for User
 /// where
-///     DB: Backend
+///     DB: Backend,
 /// {
 ///     type SelectExpression = (users::id, users::name);
 ///
@@ -414,7 +439,10 @@ where
 /// #     use schema::users::dsl::*;
 /// #     let connection = &mut establish_connection();
 /// let first_user = users.select(User::as_select()).first(connection)?;
-/// let expected = User { id: 1, name: "Sean".into() };
+/// let expected = User {
+///     id: 1,
+///     name: "Sean".into(),
+/// };
 /// assert_eq!(expected, first_user);
 /// #     Ok(())
 /// # }
@@ -426,7 +454,7 @@ where
 ///
 /// ```rust
 /// # include!("../doctest_setup.rs");
-/// use schema::{users, posts};
+/// use schema::{posts, users};
 ///
 /// #[derive(Debug, PartialEq, Queryable, Selectable)]
 /// struct User {
@@ -449,10 +477,17 @@ where
 ///     .select(<(User, Post)>::as_select())
 ///     .first(connection)?;
 ///
-/// let expected_user = User { id: 1, name: "Sean".into() };
+/// let expected_user = User {
+///     id: 1,
+///     name: "Sean".into(),
+/// };
 /// assert_eq!(expected_user, first_user);
 ///
-/// let expected_post = Post { id: 1, user_id: 1, title: "My first post".into() };
+/// let expected_post = Post {
+///     id: 1,
+///     user_id: 1,
+///     title: "My first post".into(),
+/// };
 /// assert_eq!(expected_post, first_post);
 /// #
 /// #     Ok(())
@@ -464,7 +499,7 @@ where
 ///
 /// ```rust
 /// # include!("../doctest_setup.rs");
-/// use schema::{users, posts};
+/// use schema::{posts, users};
 ///
 /// #[derive(Debug, PartialEq, Queryable, Selectable)]
 /// struct User {
@@ -486,10 +521,15 @@ where
 ///     .select(<(User, PostTitle)>::as_select())
 ///     .first(connection)?;
 ///
-/// let expected_user = User { id: 1, name: "Sean".into() };
+/// let expected_user = User {
+///     id: 1,
+///     name: "Sean".into(),
+/// };
 /// assert_eq!(expected_user, first_user);
 ///
-/// let expected_post_title = PostTitle { title: "My first post".into() };
+/// let expected_post_title = PostTitle {
+///     title: "My first post".into(),
+/// };
 /// assert_eq!(expected_post_title, first_post_title);
 /// #
 /// #     Ok(())
@@ -503,7 +543,7 @@ where
 ///
 /// ```rust
 /// # include!("../doctest_setup.rs");
-/// use schema::{users, posts};
+/// use schema::{posts, users};
 ///
 /// #[derive(Debug, PartialEq, Queryable, Selectable)]
 /// struct User {
@@ -572,8 +612,8 @@ where
 ///
 /// ```rust
 /// # include!("../doctest_setup.rs");
-/// use schema::{users, posts};
 /// use diesel::dsl;
+/// use schema::{posts, users};
 ///
 /// #[derive(Debug, PartialEq, Queryable, Selectable)]
 /// struct User {
@@ -630,7 +670,6 @@ where
 /// #     Ok(())
 /// # }
 /// ```
-///
 pub trait Selectable<DB: Backend> {
     /// The expression you'd like to select.
     ///
@@ -690,7 +729,6 @@ pub trait ValidGrouping<GroupByClause> {
     ///
     /// This type should always be one of the structs in the [`is_aggregate`]
     /// module. See the documentation of those structs for more details.
-    ///
     type IsAggregate;
 }
 
@@ -702,10 +740,19 @@ impl<T: ValidGrouping<GB> + ?Sized, GB> ValidGrouping<GB> for &T {
     type IsAggregate = T::IsAggregate;
 }
 
+impl<GB> ValidGrouping<GB> for () {
+    type IsAggregate = is_aggregate::Never;
+}
+
 #[doc(inline)]
 pub use diesel_derives::ValidGrouping;
 
 #[doc(hidden)]
+#[diagnostic::on_unimplemented(
+    note = "if your query contains columns from several tables in your group by or select \
+            clause make sure to call `allow_columns_to_appear_in_same_group_by_clause!` \
+            with these columns"
+)]
 pub trait IsContainedInGroupBy<T> {
     type Output;
 }
@@ -741,7 +788,12 @@ pub mod is_contained_in_group_by {
 /// [`is_aggregate::Yes`] and [`is_aggregate::No`] can only appear with
 /// themselves or [`is_aggregate::Never`]. [`is_aggregate::Never`] can appear
 /// with anything.
-///
+#[diagnostic::on_unimplemented(
+    message = "mixing aggregate and not aggregate expressions is not allowed in SQL",
+    note = "you tried to combine expressions that aggregate over a certain column with expressions that don't aggregate over that column",
+    note = "try to either use aggregate functions like `min`/`max`/… for this column or add the column to your `GROUP BY` clause",
+    note = "also there are clauses like `WHERE` or `RETURNING` that does not accept aggregate expressions at all"
+)]
 pub trait MixedAggregates<Other> {
     /// What is the resulting `IsAggregate` type?
     type Output;
@@ -869,7 +921,6 @@ use crate::query_builder::{QueryFragment, QueryId};
 /// # /*
 /// type DB = diesel::sqlite::Sqlite;
 /// # */
-///
 /// fn find_user(search: Search) -> Box<dyn BoxableExpression<users::table, DB, SqlType = Bool>> {
 ///     match search {
 ///         Search::Id(id) => Box::new(users::id.eq(id)),
@@ -877,9 +928,7 @@ use crate::query_builder::{QueryFragment, QueryId};
 ///     }
 /// }
 ///
-/// let user_one = users::table
-///     .filter(find_user(Search::Id(1)))
-///     .first(conn)?;
+/// let user_one = users::table.filter(find_user(Search::Id(1))).first(conn)?;
 /// assert_eq!((1, String::from("Sean")), user_one);
 ///
 /// let tess = users::table
@@ -896,9 +945,9 @@ use crate::query_builder::{QueryFragment, QueryId};
 /// # include!("../doctest_setup.rs");
 ///
 /// # use schema::users;
-/// use diesel::sql_types::Text;
 /// use diesel::dsl;
 /// use diesel::expression::ValidGrouping;
+/// use diesel::sql_types::Text;
 ///
 /// # fn main() {
 /// #     run_test().unwrap();
@@ -914,17 +963,16 @@ use crate::query_builder::{QueryFragment, QueryId};
 /// # /*
 /// type DB = diesel::sqlite::Sqlite;
 /// # */
-///
 /// fn selection<GB>(
-///     selection: NameOrConst
+///     selection: NameOrConst,
 /// ) -> Box<
 ///     dyn BoxableExpression<
 ///         users::table,
 ///         DB,
 ///         GB,
 ///         <users::name as ValidGrouping<GB>>::IsAggregate,
-///         SqlType = Text
-///     >
+///         SqlType = Text,
+///     >,
 /// >
 /// where
 ///     users::name: BoxableExpression<
@@ -932,7 +980,7 @@ use crate::query_builder::{QueryFragment, QueryId};
 ///             DB,
 ///             GB,
 ///             <users::name as ValidGrouping<GB>>::IsAggregate,
-///             SqlType = Text
+///             SqlType = Text,
 ///         > + ValidGrouping<GB>,
 /// {
 ///     match selection {
@@ -964,8 +1012,8 @@ use crate::query_builder::{QueryFragment, QueryId};
 /// ```rust
 /// # include!("../doctest_setup.rs");
 /// # use schema::{users, posts};
-/// use diesel::sql_types::Bool;
 /// use diesel::dsl::InnerJoinQuerySource;
+/// use diesel::sql_types::Bool;
 ///
 /// # fn main() {
 /// #     run_test().unwrap();
@@ -981,11 +1029,11 @@ use crate::query_builder::{QueryFragment, QueryId};
 /// # /*
 /// type DB = diesel::sqlite::Sqlite;
 /// # */
-///
 /// fn filter_user_posts(
 ///     filter: UserPostFilter,
-/// ) -> Box<dyn BoxableExpression<InnerJoinQuerySource<users::table, posts::table>, DB, SqlType = Bool>>
-/// {
+/// ) -> Box<
+///     dyn BoxableExpression<InnerJoinQuerySource<users::table, posts::table>, DB, SqlType = Bool>,
+/// > {
 ///     match filter {
 ///         UserPostFilter::User(user_id) => Box::new(users::id.eq(user_id)),
 ///         UserPostFilter::Post(post_id) => Box::new(posts::id.eq(post_id)),
@@ -1042,10 +1090,8 @@ impl<QS, ST, DB, GB, IsAggregate> ValidGrouping<GB>
 }
 
 /// Converts a tuple of values into a tuple of Diesel expressions.
-///
-/// This trait is similar to [`AsExpression`], but it operates on tuples.
-/// The expressions must all be of the same SQL type.
-///
+#[deprecated(note = "Use `IntoArrayExpression` instead")]
+#[cfg(all(feature = "with-deprecated", not(feature = "without-deprecated")))]
 pub trait AsExpressionList<ST> {
     /// The final output expression
     type Expression;
@@ -1055,4 +1101,19 @@ pub trait AsExpressionList<ST> {
     // that to appease clippy
     #[allow(clippy::wrong_self_convention)]
     fn as_expression_list(self) -> Self::Expression;
+}
+
+#[cfg(feature = "postgres_backend")]
+#[cfg(all(feature = "with-deprecated", not(feature = "without-deprecated")))]
+#[allow(deprecated)]
+impl<T, ST> AsExpressionList<ST> for T
+where
+    T: crate::pg::expression::array::IntoArrayExpression<ST>,
+    ST: SqlType + TypedExpressionType,
+{
+    type Expression = <T as crate::pg::expression::array::IntoArrayExpression<ST>>::ArrayExpression;
+
+    fn as_expression_list(self) -> Self::Expression {
+        self.into_array_expression()
+    }
 }

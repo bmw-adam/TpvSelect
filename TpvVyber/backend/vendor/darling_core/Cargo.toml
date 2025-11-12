@@ -13,7 +13,7 @@
 edition = "2021"
 rust-version = "1.56"
 name = "darling_core"
-version = "0.20.11"
+version = "0.21.3"
 authors = ["Ted Driggs <ted.driggs@outlook.com>"]
 build = false
 autolib = false
@@ -28,6 +28,10 @@ implementing custom derives. Use https://crates.io/crates/darling in your code.
 readme = false
 license = "MIT"
 repository = "https://github.com/TedDriggs/darling"
+
+[features]
+diagnostics = []
+suggestions = ["strsim"]
 
 [lib]
 name = "darling_core"
@@ -45,6 +49,10 @@ version = "1.0.86"
 [dependencies.quote]
 version = "1.0.18"
 
+[dependencies.serde]
+version = "1.0.210"
+optional = true
+
 [dependencies.strsim]
 version = "0.11.1"
 optional = true
@@ -56,6 +64,5 @@ features = [
     "extra-traits",
 ]
 
-[features]
-diagnostics = []
-suggestions = ["strsim"]
+[dev-dependencies.serde_json]
+version = "1.0.140"

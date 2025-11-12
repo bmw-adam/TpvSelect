@@ -11,6 +11,8 @@ pub type __u64 = c_ulonglong;
 pub type __s64 = c_longlong;
 
 s! {
+    // FIXME(1.0): This should not implement `PartialEq`
+    #[allow(unpredictable_function_pointer_comparisons)]
     pub struct sigaction {
         pub sa_sigaction: crate::sighandler_t,
         pub sa_mask: crate::sigset_t,
@@ -195,7 +197,6 @@ s! {
 }
 
 s_no_extra_traits! {
-    #[allow(missing_debug_implementations)]
     #[repr(align(16))]
     pub struct max_align_t {
         priv_: [i64; 4],
@@ -323,6 +324,7 @@ pub const SA_ONSTACK: c_int = 1;
 pub const SA_SIGINFO: c_int = 0x200;
 pub const SA_NOCLDWAIT: c_int = 0x100;
 
+pub const SIGEMT: c_int = 7;
 pub const SIGTTIN: c_int = 21;
 pub const SIGTTOU: c_int = 22;
 pub const SIGXCPU: c_int = 24;

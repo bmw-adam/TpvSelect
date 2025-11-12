@@ -6,17 +6,17 @@ edition = "2024"
 [dependencies]
 actix-web = { version = "4", features = [ "openssl" ] }
 openssl = { version = "0.10" }
-actix-web-lab = { version = "0.24.1", features = ["spa"] }
+actix-web-lab = { version = "0.24.3", features = ["spa"] }
 
 oauth2 = "4"            # Google's OAuth2 via the `oauth2` crate
-serde = { version = "1.0.219", features = [ "derive" ] }
-reqwest = { version = "0.12.15", features = [ "json" ]}
+serde = { version = "1.0.228", features = [ "derive" ] }
+reqwest = { version = "0.12.24", features = [ "json" ]}
 dotenv = "0.15.0"
 actix-cors = "0.7.1"
-serde_json = "1.0.140"
+serde_json = "1.0.145"
 
 dotenvy = "0.15.7"
-diesel = { version = "2.2.0", features = ["postgres"] }
+diesel = { version = "2.3.3", features = ["postgres"] }
 
 # --- OpenTelemetry ---
 opentelemetry = { version = "0.23", features = ["trace"] }

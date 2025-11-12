@@ -4,6 +4,65 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.4] - 2025-10-14
+
+### Major change to `wasm_js` backend
+
+Now, when the `wasm_js` feature is enabled, the `wasm_js` backend will be used
+by default. Users of `wasm32-unknown-unknown` targeting JavaScript environments
+like the Web and Node.js will no longer need to specify:
+```
+--cfg getrandom_backend="wasm_js"
+```
+in `RUSTFLAGS` for the crate to compile. They can now simple enable a feature.
+
+Note: this should not affect non-JS users of the `wasm32-unknown-unknown`
+target. Using `--cfg getrandom_backend` will still override the source of
+randomness _even if_ the `wasm_js` feature is enabled. This includes
+`--cfg getrandom_backend=custom` and `--cfg getrandom_backend=unsupported`.
+
+For more information, see the discussions in [#671], [#675], and [#730].
+
+### Added
+- `unsupported` opt-in backend [#667]
+- `windows_legacy` opt-in backend [#724]
+
+### Changed
+- Implement Memory Sanitizer unpoisoning more precisely [#678]
+- Relax MSRV for the `linux_raw` opt-in backend on ARM targets [#688]
+- Use `getrandom` syscall on all RISC-V Linux targets [#699]
+- Replaced `wasi` dependency with `wasip2` [#721]
+- Enable `wasm_js` backend by default if the `wasm_js` feature is enabled [#730]
+
+### Removed
+- Unstable `rustc-dep-of-std` crate feature [#694]
+
+[#667]: https://github.com/rust-random/getrandom/pull/667
+[#671]: https://github.com/rust-random/getrandom/issues/671
+[#675]: https://github.com/rust-random/getrandom/pull/675
+[#678]: https://github.com/rust-random/getrandom/pull/678
+[#688]: https://github.com/rust-random/getrandom/pull/688
+[#694]: https://github.com/rust-random/getrandom/pull/694
+[#699]: https://github.com/rust-random/getrandom/pull/699
+[#721]: https://github.com/rust-random/getrandom/pull/721
+[#724]: https://github.com/rust-random/getrandom/pull/724
+[#730]: https://github.com/rust-random/getrandom/pull/730
+
+## [0.3.3] - 2025-05-09
+
+### Changed
+- Doc improvements [#632] [#634] [#635]
+- Add crate version to docs.rs links used in `compile_error!`s [#639]
+
+### Fixed
+- Error handling in WASI p1 [#661]
+
+[#632]: https://github.com/rust-random/getrandom/pull/632
+[#634]: https://github.com/rust-random/getrandom/pull/634
+[#635]: https://github.com/rust-random/getrandom/pull/635
+[#639]: https://github.com/rust-random/getrandom/pull/639
+[#661]: https://github.com/rust-random/getrandom/pull/661
+
 ## [0.3.2] - 2025-03-17
 
 ### Added
@@ -66,7 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `register_custom_getrandom!` macro [#504]
 - Implementation of `From<NonZeroU32>` for `Error` and `Error::code` method [#507]
 - Internet Explorer 11 support [#554]
-- Target-specific assocciated `Error` constants [#562]
+- Target-specific associated `Error` constants [#562]
 
 ### Changed
 - Use `ProcessPrng` on Windows 10 and up, and use `RtlGenRandom` on older Windows versions [#415]
@@ -115,6 +174,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#562]: https://github.com/rust-random/getrandom/pull/562
 [#571]: https://github.com/rust-random/getrandom/pull/571
 [#574]: https://github.com/rust-random/getrandom/pull/574
+
+## [0.2.16] - 2025-04-22
+### Added
+- Cygwin support (backport of [#626]) [#654]
+
+[#654]: https://github.com/rust-random/getrandom/pull/654
 
 ## [0.2.15] - 2024-05-06
 ### Added
@@ -208,7 +273,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Update MSRV to 1.36 [#291]
 - Use getentropy on Emscripten [#307]
-- Solaris: consistantly use `/dev/random` source [#310]
+- Solaris: consistently use `/dev/random` source [#310]
 - Move 3ds selection above rdrand/js/custom fallback [#312]
 - Remove buffer zeroing from Node.js implementation [#315]
 - Use `open` instead of `open64` [#326]
@@ -566,9 +631,12 @@ Publish initial implementation.
 ## [0.0.0] - 2019-01-19
 Publish an empty template library.
 
+[0.3.4]: https://github.com/rust-random/getrandom/compare/v0.3.3...v0.3.4
+[0.3.3]: https://github.com/rust-random/getrandom/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/rust-random/getrandom/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/rust-random/getrandom/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/rust-random/getrandom/compare/v0.2.15...v0.3.0
+[0.2.16]: https://github.com/rust-random/getrandom/compare/v0.2.15...v0.2.16
 [0.2.15]: https://github.com/rust-random/getrandom/compare/v0.2.14...v0.2.15
 [0.2.14]: https://github.com/rust-random/getrandom/compare/v0.2.13...v0.2.14
 [0.2.13]: https://github.com/rust-random/getrandom/compare/v0.2.12...v0.2.13
@@ -584,7 +652,7 @@ Publish an empty template library.
 [0.2.3]: https://github.com/rust-random/getrandom/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/rust-random/getrandom/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/rust-random/getrandom/compare/v0.2.0...v0.2.1
-[0.2.0]: https://github.com/rust-random/getrandom/compare/v0.1.15...v0.2.0
+[0.2.0]: https://github.com/rust-random/getrandom/compare/v0.1.16...v0.2.0
 [0.1.16]: https://github.com/rust-random/getrandom/compare/v0.1.15...v0.1.16
 [0.1.15]: https://github.com/rust-random/getrandom/compare/v0.1.14...v0.1.15
 [0.1.14]: https://github.com/rust-random/getrandom/compare/v0.1.13...v0.1.14

@@ -1,6 +1,6 @@
 [package]
 name = "rustls-pemfile"
-version = "2.2.0"
+version = "1.0.4"
 edition = "2018"
 license = "Apache-2.0 OR ISC OR MIT"
 readme = "README.md"
@@ -10,19 +10,11 @@ repository = "https://github.com/rustls/pemfile"
 categories = ["network-programming", "cryptography"]
 
 [dependencies]
-pki-types = { package = "rustls-pki-types", version = "1.9" }
+base64 = "0.21"
 
 [dev-dependencies]
 bencher = "0.1.5"
 
-[features]
-default = ["std"]
-std = ["pki-types/std"]
-
 [[bench]]
 name = "benchmark"
 harness = false
-
-[[test]]
-name = "integration"
-required-features = ["std"]

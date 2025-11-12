@@ -13,7 +13,7 @@
 edition = "2024"
 rust-version = "1.85"
 name = "actix-web-lab"
-version = "0.24.1"
+version = "0.24.3"
 authors = ["Rob Ede <robjtede@icloud.com>"]
 build = false
 autolib = false
@@ -40,6 +40,13 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/robjtede/actix-web-lab"
 resolver = "2"
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = [
+    "--cfg",
+    "docsrs",
+]
+
 [package.metadata.cargo_check_external_types]
 allowed_external_types = [
     "actix_http::*",
@@ -56,13 +63,6 @@ allowed_external_types = [
     "serde_json::*",
     "serde::*",
     "tokio::*",
-]
-
-[package.metadata.docs.rs]
-all-features = true
-rustdoc-args = [
-    "--cfg",
-    "docsrs",
 ]
 
 [features]
@@ -238,7 +238,7 @@ version = "1"
 version = "0.1"
 
 [dependencies.tokio]
-version = "1.43.0"
+version = "1.38.2"
 features = [
     "sync",
     "macros",
@@ -325,7 +325,7 @@ version = "0.3"
 features = ["formatting"]
 
 [dev-dependencies.tokio]
-version = "1.43.0"
+version = "1.38.2"
 features = ["full"]
 
 [dev-dependencies.tokio-util]

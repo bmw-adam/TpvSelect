@@ -13,7 +13,7 @@
 edition = "2021"
 rust-version = "1.56"
 name = "serde_html_form"
-version = "0.2.7"
+version = "0.2.8"
 build = false
 exclude = ["/.github"]
 autolib = false
@@ -34,6 +34,9 @@ categories = [
 ]
 license = "MIT"
 repository = "https://github.com/jplatte/serde_html_form"
+
+[features]
+default = ["ryu"]
 
 [lib]
 name = "serde_html_form"
@@ -58,8 +61,8 @@ version = "1.0.1"
 version = "1.0.9"
 optional = true
 
-[dependencies.serde]
-version = "1.0.136"
+[dependencies.serde_core]
+version = "1.0.221"
 
 [dev-dependencies.assert_matches2]
 version = "0.1.0"
@@ -68,14 +71,11 @@ version = "0.1.0"
 version = "0.1.11"
 
 [dev-dependencies.serde]
-version = "1.0.136"
+version = "1.0.221"
 features = ["derive"]
 
 [dev-dependencies.serde_urlencoded]
 version = "0.7.1"
-
-[features]
-default = ["ryu"]
 
 [lints.rust.unexpected_cfgs]
 level = "warn"

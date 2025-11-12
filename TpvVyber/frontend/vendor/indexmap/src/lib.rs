@@ -1,6 +1,3 @@
-// We *mostly* avoid unsafe code, but `Slice` allows it for DST casting.
-#![deny(unsafe_code)]
-#![warn(rust_2018_idioms)]
 #![no_std]
 
 //! [`IndexMap`] is a hash table where the iteration order of the key-value
@@ -49,8 +46,8 @@
 //!
 //! [feature flags]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-features-section
 //! [`no_std`]: #no-standard-library-targets
-//! [`Serialize`]: `::serde::Serialize`
-//! [`Deserialize`]: `::serde::Deserialize`
+//! [`Serialize`]: `::serde_core::Serialize`
+//! [`Deserialize`]: `::serde_core::Deserialize`
 //! [`BorshSerialize`]: `::borsh::BorshSerialize`
 //! [`BorshDeserialize`]: `::borsh::BorshDeserialize`
 //! [`borsh`]: `::borsh`
@@ -60,7 +57,7 @@
 //! ### Alternate Hashers
 //!
 //! [`IndexMap`] and [`IndexSet`] have a default hasher type
-//! [`S = RandomState`][std::collections::hash_map::RandomState],
+//! [`S = RandomState`][std::hash::RandomState],
 //! just like the standard `HashMap` and `HashSet`, which is resistant to
 //! HashDoS attacks but not the most performant. Type aliases can make it easier
 //! to use alternate hashers:
@@ -79,7 +76,7 @@
 //!
 //! ### Rust Version
 //!
-//! This version of indexmap requires Rust 1.63 or later.
+//! This version of indexmap requires Rust 1.82 or later.
 //!
 //! The indexmap 2.x release series will use a carefully considered version
 //! upgrade policy, where in a later 2.x version, we will raise the minimum
@@ -108,8 +105,6 @@ extern crate alloc;
 #[macro_use]
 extern crate std;
 
-use alloc::vec::{self, Vec};
-
 mod arbitrary;
 #[macro_use]
 mod macros;
@@ -117,6 +112,8 @@ mod macros;
 mod borsh;
 #[cfg(feature = "serde")]
 mod serde;
+#[cfg(feature = "sval")]
+mod sval;
 mod util;
 
 pub mod map;
@@ -203,16 +200,6 @@ impl<K, V> Bucket<K, V> {
     }
 }
 
-trait Entries {
-    type Entry;
-    fn into_entries(self) -> Vec<Self::Entry>;
-    fn as_entries(&self) -> &[Self::Entry];
-    fn as_entries_mut(&mut self) -> &mut [Self::Entry];
-    fn with_entries<F>(&mut self, f: F)
-    where
-        F: FnOnce(&mut [Self::Entry]);
-}
-
 /// The error type for [`try_reserve`][IndexMap::try_reserve] methods.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct TryReserveError {
@@ -265,9 +252,7 @@ impl core::fmt::Display for TryReserveError {
     }
 }
 
-#[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-impl std::error::Error for TryReserveError {}
+impl core::error::Error for TryReserveError {}
 
 // NOTE: This is copied from the slice module in the std lib.
 /// The error type returned by [`get_disjoint_indices_mut`][`IndexMap::get_disjoint_indices_mut`].
@@ -295,6 +280,4 @@ impl core::fmt::Display for GetDisjointMutError {
     }
 }
 
-#[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-impl std::error::Error for GetDisjointMutError {}
+impl core::error::Error for GetDisjointMutError {}

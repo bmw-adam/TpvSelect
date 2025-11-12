@@ -402,7 +402,7 @@ impl<P: PartProps> FormParts<P> {
     }
 
     // If predictable, computes the length the request will have
-    // The length should be preditable if only String and file fields have been added,
+    // The length should be predictable if only String and file fields have been added,
     // but not if a generic reader has been added;
     pub(crate) fn compute_length(&mut self) -> Option<u64> {
         let mut length = 0u64;
@@ -601,8 +601,9 @@ fn gen_boundary() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures_util::stream;
     use futures_util::TryStreamExt;
-    use futures_util::{future, stream};
+    use std::future;
     use tokio::{self, runtime};
 
     #[test]
@@ -632,7 +633,10 @@ mod tests {
                 ))))),
             )
             .part("key1", Part::text("value1"))
-            .part("key2", Part::text("value2").mime(mime::IMAGE_BMP))
+            .part(
+                "key2",
+                Part::text("value2").mime(mime_guess::mime::IMAGE_BMP),
+            )
             .part(
                 "reader2",
                 Part::stream(Body::stream(stream::once(future::ready::<
@@ -678,7 +682,7 @@ mod tests {
 
     #[test]
     fn stream_to_end_with_header() {
-        let mut part = Part::text("value2").mime(mime::IMAGE_BMP);
+        let mut part = Part::text("value2").mime(mime_guess::mime::IMAGE_BMP);
         let mut headers = HeaderMap::new();
         headers.insert("Hdr3", "/a/b/c".parse().unwrap());
         part = part.headers(headers);

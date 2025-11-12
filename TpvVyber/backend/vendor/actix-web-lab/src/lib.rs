@@ -31,6 +31,7 @@ mod catch_panic;
 #[cfg(feature = "cbor")]
 mod cbor;
 mod clear_site_data;
+mod condition_option;
 mod content_length;
 mod csv;
 mod display_stream;
@@ -40,6 +41,7 @@ mod host;
 mod infallible_body_stream;
 mod json;
 mod lazy_data;
+mod lazy_data_shared;
 mod load_shed;
 mod local_data;
 mod middleware_map_response;

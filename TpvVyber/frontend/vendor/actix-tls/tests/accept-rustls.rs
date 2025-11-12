@@ -24,12 +24,12 @@ use rustls_pki_types_1::PrivateKeyDer;
 use tls_openssl::ssl::SslVerifyMode;
 
 fn new_cert_and_key() -> (String, String) {
-    let cert =
+    let rcgen::CertifiedKey { cert, key_pair } =
         rcgen::generate_simple_self_signed(vec!["127.0.0.1".to_owned(), "localhost".to_owned()])
             .unwrap();
 
-    let key = cert.serialize_private_key_pem();
-    let cert = cert.serialize_pem().unwrap();
+    let key = key_pair.serialize_pem();
+    let cert = cert.pem();
 
     (cert, key)
 }
@@ -87,7 +87,7 @@ async fn accepts_connections() {
             let tls_acceptor = Acceptor::new(rustls_server_config(cert.clone(), key.clone()));
 
             tls_acceptor
-                .map_err(|err| println!("Rustls error: {:?}", err))
+                .map_err(|err| println!("Rustls error: {err:?}"))
                 .and_then(move |_stream: TlsStream<TcpStream>| ok(()))
         }
     });

@@ -90,7 +90,15 @@ where
         }
     }
 
-    #[cfg(feature = "sqlite")]
+    /// Register an internal flag whether or not diesel should
+    /// generate explicitly qualified column names
+    #[diesel_derives::__diesel_public_if(
+        feature = "i-implement-a-third-party-backend-and-opt-into-breaking-changes"
+    )]
+    #[cfg(any(
+        feature = "sqlite",
+        feature = "i-implement-a-third-party-backend-and-opt-into-breaking-changes"
+    ))]
     pub(crate) fn skip_from(&mut self, value: bool) {
         if let AstPassInternals::ToSql(_, ref mut options) = self.internals {
             options.skip_from = value
@@ -274,7 +282,7 @@ where
                 metadata_lookup: _,
             } => collector.append_bind_data(bind_collector_data),
             AstPassInternals::DebugBinds(ref mut f) => {
-                f.push(Box::new("Opaque bind collector data"))
+                DB::BindCollector::push_debug_binds(bind_collector_data, f);
             }
             _ => {}
         }
@@ -287,7 +295,7 @@ where
         doc(hidden)
     )] // This is used by the `define_sql_function` macro
     #[cfg_attr(
-        docsrs,
+        diesel_docsrs,
         doc(cfg(feature = "i-implement-a-third-party-backend-and-opt-into-breaking-changes"))
     )]
     pub fn backend(&self) -> &DB {
@@ -300,7 +308,7 @@ where
         doc(hidden)
     )] // This is used by the `__diesel_column` macro
     #[cfg_attr(
-        docsrs,
+        diesel_docsrs,
         doc(cfg(feature = "i-implement-a-third-party-backend-and-opt-into-breaking-changes"))
     )]
     pub fn should_skip_from(&self) -> bool {
@@ -377,6 +385,15 @@ where
     /// This function allows to access the inner bind collector if
     /// this `AstPass` represents a collect binds pass.
     fn bind_collector(&mut self) -> Option<(&mut DB::BindCollector<'b>, &mut DB::MetadataLookup)>;
+
+    /// This function allows to access the inner debug bind collector pass
+    fn debug_binds(&mut self) -> Option<(&mut Vec<Box<dyn fmt::Debug + 'b>>, &'b DB)>;
+
+    /// Construct a new AstPass for collecting bind values into the provided buffer
+    fn collect_debug_binds_pass(
+        formatter: &'a mut Vec<Box<dyn fmt::Debug + 'b>>,
+        backend: &'b DB,
+    ) -> AstPass<'a, 'b, DB>;
 }
 
 impl<'a, 'b, DB> AstPassHelper<'a, 'b, DB> for AstPass<'a, 'b, DB>
@@ -433,5 +450,20 @@ where
         } else {
             None
         }
+    }
+
+    fn debug_binds(&mut self) -> Option<(&mut Vec<Box<dyn fmt::Debug + 'b>>, &'b DB)> {
+        if let AstPassInternals::DebugBinds(formatter) = &mut self.internals {
+            Some((formatter, self.backend))
+        } else {
+            None
+        }
+    }
+
+    fn collect_debug_binds_pass(
+        formatter: &'a mut Vec<Box<dyn fmt::Debug + 'b>>,
+        backend: &'b DB,
+    ) -> AstPass<'a, 'b, DB> {
+        AstPass::debug_binds(formatter, backend)
     }
 }

@@ -1,5 +1,9 @@
 #![allow(unsafe_code)] // ffi calls
+#[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
 extern crate libsqlite3_sys as ffi;
+
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
+use sqlite_wasm_rs as ffi;
 
 use std::cell::Ref;
 use std::ptr::NonNull;
@@ -234,7 +238,7 @@ mod tests {
     use crate::*;
 
     #[expect(clippy::approx_constant)] // we really want to use 3.14
-    #[test]
+    #[diesel_test_helper::test]
     fn can_convert_all_values() {
         let mut conn = SqliteConnection::establish(":memory:").unwrap();
 

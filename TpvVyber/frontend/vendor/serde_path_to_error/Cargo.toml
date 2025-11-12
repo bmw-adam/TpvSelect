@@ -11,9 +11,9 @@
 
 [package]
 edition = "2021"
-rust-version = "1.56"
+rust-version = "1.61"
 name = "serde_path_to_error"
-version = "0.1.17"
+version = "0.1.20"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
 build = false
 autolib = false
@@ -28,18 +28,21 @@ keywords = [
     "serde",
     "serialization",
 ]
-categories = ["encoding"]
+categories = [
+    "encoding",
+    "no-std",
+]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/dtolnay/path-to-error"
 
 [package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
 rustdoc-args = [
     "--generate-link-to-definition",
     "--extern-html-root-url=core=https://doc.rust-lang.org",
     "--extern-html-root-url=alloc=https://doc.rust-lang.org",
     "--extern-html-root-url=std=https://doc.rust-lang.org",
 ]
-targets = ["x86_64-unknown-linux-gnu"]
 
 [lib]
 name = "serde_path_to_error"
@@ -56,11 +59,20 @@ path = "tests/serialize.rs"
 [dependencies.itoa]
 version = "1.0"
 
-[dependencies.serde]
-version = "1.0.194"
+[dependencies.serde_core]
+version = "1.0.220"
+features = ["alloc"]
+default-features = false
+
+[dev-dependencies.serde]
+version = "1.0.220"
 
 [dev-dependencies.serde_derive]
-version = "1.0.194"
+version = "1.0.220"
 
 [dev-dependencies.serde_json]
 version = "1.0.100"
+
+[target."cfg(any())".dependencies.serde]
+version = "1.0.220"
+default-features = false

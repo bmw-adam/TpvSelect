@@ -156,10 +156,22 @@
 //!   [dependencies]
 //!   libsqlite3-sys = { version = "0.29", features = ["bundled"] }
 //!   ```
-//! - `postgres`: This feature enables the diesel postgres backend. Enabling this feature requires a compatible
-//!   copy of `libpq` for your target architecture. This features implies `postgres_backend`
-//! - `mysql`: This feature enables the idesel mysql backend. Enabling this feature requires a compatible copy
-//!   of `libmysqlclient` for your target architecture. This feature implies `mysql_backend`
+//! - `postgres`: This feature enables the diesel postgres backend. This features implies `postgres_backend`
+//!   Enabling this feature requires a compatible copy of `libpq` for your target architecture.
+//!   Alternatively, you can add `pq-sys` with the `bundled` feature as a dependency to your
+//!   crate so libpq will be bundled:
+//!   ```toml
+//!   [dependencies]
+//!   pq-sys = { version = "0.6", features = ["bundled"] }
+//!   openssl-sys = { version = "0.9.100", features = ["vendored"] }
+//!   ```
+//! - `mysql`: This feature enables the diesel mysql backend. This feature implies `mysql_backend`.
+//!   Enabling this feature requires a compatible copy of `libmysqlclient` for your target architecture.
+//!   Alternatively, you can add `mysqlclient-sys` with the `bundled` feature as a dependency to your
+//!   crate so libmysqlclient will be bundled:
+//!   ```toml
+//!   [dependencies]
+//!   mysqlclient-sys = { version = "0.4", features = ["bundled"] }
 //! - `postgres_backend`: This feature enables those parts of diesels postgres backend, that are not dependent
 //!   on `libpq`. Diesel does not provide any connection implementation with only this feature enabled.
 //!   This feature can be used to implement a custom implementation of diesels `Connection` trait for the
@@ -215,7 +227,13 @@
 //! - `32-column-tables`
 
 #![cfg_attr(feature = "unstable", feature(trait_alias))]
-#![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
+#![cfg_attr(feature = "unstable", feature(strict_provenance_lints))]
+#![cfg_attr(
+    feature = "unstable",
+    warn(fuzzy_provenance_casts, lossy_provenance_casts)
+)]
+#![cfg_attr(diesel_docsrs, feature(doc_cfg, rustdoc_internals))]
+#![cfg_attr(diesel_docsrs, expect(internal_features))]
 #![cfg_attr(feature = "128-column-tables", recursion_limit = "256")]
 // Built-in Lints
 #![warn(
@@ -250,6 +268,11 @@
 )]
 #![deny(unsafe_code)]
 #![cfg_attr(test, allow(clippy::map_unwrap_or, clippy::unwrap_used))]
+
+// Running wasm tests on dedicated_worker
+#[cfg(test)]
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
+wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_dedicated_worker);
 
 extern crate diesel_derives;
 
@@ -694,6 +717,7 @@ pub mod helper_types {
 }
 
 pub mod prelude {
+
     //! Re-exports important traits and types. Meant to be glob imported when using Diesel.
 
     #[doc(inline)]
@@ -713,6 +737,8 @@ pub mod prelude {
     pub use crate::expression::IntoSql as _;
 
     #[doc(inline)]
+    pub use crate::expression::functions::declare_sql_function;
+    #[doc(inline)]
     pub use crate::expression::functions::define_sql_function;
     #[cfg(all(feature = "with-deprecated", not(feature = "without-deprecated")))]
     pub use crate::expression::functions::sql_function;
@@ -725,6 +751,8 @@ pub mod prelude {
     pub use crate::insertable::Insertable;
     #[doc(inline)]
     pub use crate::macros::prelude::*;
+    #[doc(inline)]
+    pub use crate::query_builder::has_query::HasQuery;
     #[doc(inline)]
     pub use crate::query_builder::AsChangeset;
     #[doc(inline)]

@@ -118,6 +118,15 @@ fn generate_connection_impl(
         }
     });
 
+    let set_cache_impl = connection_types.iter().map(|c| {
+        let variant_ident = c.name;
+        quote::quote! {
+            #ident::#variant_ident(conn) => {
+                diesel::connection::Connection::set_prepared_statement_cache_size(conn, size);
+            }
+        }
+    });
+
     let get_instrumentation_impl = connection_types.iter().map(|c| {
         let variant_ident = c.name;
         quote::quote! {
@@ -308,6 +317,10 @@ fn generate_connection_impl(
                 if let Some((outer_collector, lookup)) = pass.bind_collector() {
                     C::handle_inner_pass(outer_collector, lookup, &self.backend, &self.inner)?;
                 }
+                if let Some((formatter, _backend)) = pass.debug_binds() {
+                    let pass = diesel::query_builder::AstPass::<MultiBackend>::collect_debug_binds_pass(formatter, &self.backend);
+                    self.inner.walk_ast(pass)?;
+                }
                 Ok(())
             }
         }
@@ -364,6 +377,12 @@ fn generate_connection_impl(
             fn set_instrumentation(&mut self, instrumentation: impl diesel::connection::Instrumentation) {
                 match self {
                     #(#instrumentation_impl,)*
+                }
+            }
+
+            fn set_prepared_statement_cache_size(&mut self, size: diesel::connection::CacheSize) {
+                match self {
+                    #(#set_cache_impl,)*
                 }
             }
 
@@ -630,6 +649,12 @@ fn generate_bind_collector(connection_types: &[ConnectionVariant]) -> TokenStrea
         ),
         (quote::quote!(diesel::sql_types::Bool), quote::quote!(bool)),
     ];
+    if cfg!(feature = "numeric") {
+        to_sql_impls.push((
+            quote::quote!(diesel::sql_types::Numeric),
+            quote::quote!(diesel::internal::derives::multiconnection::bigdecimal::BigDecimal),
+        ));
+    }
     if cfg!(feature = "chrono") {
         to_sql_impls.push((
             quote::quote!(diesel::sql_types::Timestamp),
@@ -684,6 +709,12 @@ fn generate_bind_collector(connection_types: &[ConnectionVariant]) -> TokenStrea
         ),
         (quote::quote!(diesel::sql_types::Bool), quote::quote!(bool)),
     ];
+    if cfg!(feature = "numeric") {
+        from_sql_impls.push((
+            quote::quote!(diesel::sql_types::Numeric),
+            quote::quote!(diesel::internal::derives::multiconnection::bigdecimal::BigDecimal),
+        ));
+    }
     if cfg!(feature = "chrono") {
         from_sql_impls.push((
             quote::quote!(diesel::sql_types::Timestamp),
@@ -1185,7 +1216,7 @@ fn generate_querybuilder(connection_types: &[ConnectionVariant]) -> TokenStream 
         quote::quote! {
             <S> diesel::query_builder::QueryFragment<super::backend::MultiBackend, super::backend::MultiAliasSyntax>
                 for diesel::query_source::Alias<S>
-        }
+        },
     ])
     .map(|t| generate_queryfragment_impls(t, &query_fragment_bounds));
 
@@ -1417,7 +1448,7 @@ fn generate_querybuilder(connection_types: &[ConnectionVariant]) -> TokenStream 
             fn column_names(
                 &self,
                 mut out: diesel::query_builder::AstPass<'_, '_, super::multi_connection_impl::backend::MultiBackend>
-            ) -> QueryResult<()> {
+            ) -> diesel::QueryResult<()> {
                 use diesel::internal::derives::multiconnection::AstPassHelper;
 
                 match out.backend() {
@@ -1453,7 +1484,7 @@ fn generate_backend(connection_types: &[ConnectionVariant]) -> TokenStream {
         }
     });
 
-    let has_sql_type_impls = vec![
+    let mut has_sql_type_impls = vec![
         quote::quote!(diesel::sql_types::SmallInt),
         quote::quote!(diesel::sql_types::Integer),
         quote::quote!(diesel::sql_types::BigInt),
@@ -1465,9 +1496,13 @@ fn generate_backend(connection_types: &[ConnectionVariant]) -> TokenStream {
         quote::quote!(diesel::sql_types::Time),
         quote::quote!(diesel::sql_types::Timestamp),
         quote::quote!(diesel::sql_types::Bool),
-    ]
-    .into_iter()
-    .map(generate_has_sql_type_impls);
+    ];
+    if cfg!(feature = "numeric") {
+        has_sql_type_impls.push(quote::quote!(diesel::sql_types::Numeric))
+    }
+    let has_sql_type_impls = has_sql_type_impls
+        .into_iter()
+        .map(generate_has_sql_type_impls);
 
     let into_variant_functions = connection_types.iter().map(|c| {
         let ty = c.ty;
@@ -1623,6 +1658,11 @@ fn generate_backend(connection_types: &[ConnectionVariant]) -> TokenStream {
         pub struct MultiSelectStatementSyntax;
         pub struct MultiAliasSyntax;
 
+        pub struct MultiWindowFrameClauseGroupSupport;
+        pub struct MultiWindowFrameExclusionSupport;
+        pub struct MultiAggregateFunctionExpressions;
+        pub struct MultiBuiltInWindowFunctionRequireOrder;
+
         impl diesel::backend::SqlDialect for MultiBackend {
             type ReturningClause = MultiReturningClause;
             // no on conflict support is also the default
@@ -1636,6 +1676,10 @@ fn generate_backend(connection_types: &[ConnectionVariant]) -> TokenStream {
             type ConcatClause = MultiConcatClauseSyntax;
             type SelectStatementSyntax = MultiSelectStatementSyntax;
             type AliasSyntax = MultiAliasSyntax;
+            type WindowFrameClauseGroupSupport = MultiWindowFrameClauseGroupSupport;
+            type WindowFrameExclusionSupport = MultiWindowFrameExclusionSupport;
+            type AggregateFunctionExpressions = MultiAggregateFunctionExpressions;
+            type BuiltInWindowFunctionRequireOrder = MultiBuiltInWindowFunctionRequireOrder;
         }
 
         impl diesel::internal::derives::multiconnection::TrustedBackend for MultiBackend {}

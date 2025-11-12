@@ -12,12 +12,7 @@
 [package]
 edition = "2018"
 name = "rustls-pemfile"
-version = "2.2.0"
-build = false
-autobins = false
-autoexamples = false
-autotests = false
-autobenches = false
+version = "1.0.4"
 description = "Basic .pem file parser for keys and certificates"
 homepage = "https://github.com/rustls/pemfile"
 readme = "README.md"
@@ -28,27 +23,12 @@ categories = [
 license = "Apache-2.0 OR ISC OR MIT"
 repository = "https://github.com/rustls/pemfile"
 
-[lib]
-name = "rustls_pemfile"
-path = "src/lib.rs"
-
-[[test]]
-name = "integration"
-path = "tests/integration.rs"
-required-features = ["std"]
-
 [[bench]]
 name = "benchmark"
-path = "benches/benchmark.rs"
 harness = false
 
-[dependencies.pki-types]
-version = "1.9"
-package = "rustls-pki-types"
+[dependencies.base64]
+version = "0.21"
 
 [dev-dependencies.bencher]
 version = "0.1.5"
-
-[features]
-default = ["std"]
-std = ["pki-types/std"]

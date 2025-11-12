@@ -5,10 +5,11 @@ mod insert_from_select;
 pub(crate) use self::batch_insert::BatchInsert;
 pub(crate) use self::column_list::ColumnList;
 pub(crate) use self::insert_from_select::InsertFromSelect;
+pub(crate) use self::private::Insert;
 #[diesel_derives::__diesel_public_if(
     feature = "i-implement-a-third-party-backend-and-opt-into-breaking-changes"
 )]
-pub(crate) use self::private::{Insert, InsertOrIgnore, Replace};
+pub(crate) use self::private::{InsertOrIgnore, Replace};
 
 use super::returning_clause::*;
 use crate::backend::{sql_dialect, DieselReserveSpecialization, SqlDialect};
@@ -82,10 +83,13 @@ where
     /// #     use diesel::insert_into;
     /// #     use self::users::dsl::*;
     /// #     let connection = &mut connection_no_data();
-    /// diesel::sql_query("CREATE TABLE users (
+    /// diesel::sql_query(
+    ///     "CREATE TABLE users (
     ///     name VARCHAR(255) NOT NULL DEFAULT 'Sean',
     ///     hair_color VARCHAR(255) NOT NULL DEFAULT 'Green'
-    /// )").execute(connection)?;
+    /// )",
+    /// )
+    /// .execute(connection)?;
     ///
     /// insert_into(users)
     ///     .default_values()

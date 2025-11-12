@@ -27,7 +27,7 @@ pub trait TextExpressionMethods: Expression + Sized {
     /// #     use diesel::insert_into;
     /// #
     /// #     let connection = &mut connection_no_data();
-    /// #     diesel::sql_query("CREATE TABLE users (
+    /// #     diesel::sql_query("CREATE TEMPORARY TABLE users (
     /// #         id INTEGER PRIMARY KEY,
     /// #         name VARCHAR(255) NOT NULL,
     /// #         hair_color VARCHAR(255)
@@ -50,10 +50,7 @@ pub trait TextExpressionMethods: Expression + Sized {
     ///
     /// // If the value is nullable, the output will be nullable
     /// let names = users.select(hair_color.concat("ish")).load(connection);
-    /// let expected_names = vec![
-    ///     Some("Greenish".to_string()),
-    ///     None,
-    /// ];
+    /// let expected_names = vec![Some("Greenish".to_string()), None];
     /// assert_eq!(Ok(expected_names), names);
     /// # }
     /// ```
@@ -155,4 +152,9 @@ mod private {
 
     impl TextOrNullableText for Text {}
     impl TextOrNullableText for Nullable<Text> {}
+
+    #[cfg(feature = "postgres_backend")]
+    impl TextOrNullableText for crate::pg::sql_types::Citext {}
+    #[cfg(feature = "postgres_backend")]
+    impl TextOrNullableText for Nullable<crate::pg::sql_types::Citext> {}
 }

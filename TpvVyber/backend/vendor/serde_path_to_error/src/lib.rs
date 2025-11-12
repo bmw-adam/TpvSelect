@@ -53,7 +53,8 @@
 //! }
 //! ```
 
-#![doc(html_root_url = "https://docs.rs/serde_path_to_error/0.1.17")]
+#![doc(html_root_url = "https://docs.rs/serde_path_to_error/0.1.20")]
+#![no_std]
 #![allow(
     clippy::doc_link_with_quotes, // https://github.com/rust-lang/rust-clippy/issues/8961
     clippy::elidable_lifetime_names,
@@ -62,17 +63,23 @@
     clippy::module_name_repetitions,
     clippy::must_use_candidate,
     clippy::needless_lifetimes,
-    clippy::new_without_default
+    clippy::new_without_default,
+    clippy::uninlined_format_args
 )]
+#![allow(unknown_lints, mismatched_lifetime_syntaxes)]
+
+extern crate alloc;
+extern crate serde_core as serde;
 
 mod de;
 mod path;
 mod ser;
 mod wrap;
 
-use std::cell::Cell;
-use std::error::Error as StdError;
-use std::fmt::{self, Display};
+use alloc::string::String;
+use core::cell::Cell;
+use core::fmt::{self, Display};
+use serde::ser::StdError;
 
 pub use crate::de::{deserialize, Deserializer};
 pub use crate::path::{Path, Segment, Segments};

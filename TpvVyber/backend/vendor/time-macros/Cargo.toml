@@ -11,9 +11,9 @@
 
 [package]
 edition = "2021"
-rust-version = "1.67.1"
+rust-version = "1.81.0"
 name = "time-macros"
-version = "0.2.22"
+version = "0.2.24"
 authors = [
     "Jacob Pratt <open-source@jhpratt.dev>",
     "Time contributors",
@@ -57,7 +57,7 @@ proc-macro = true
 version = "0.1.0"
 
 [dependencies.time-core]
-version = "=0.1.4"
+version = "=0.1.6"
 
 [lints.clippy]
 alloc-instead-of-core = "deny"
@@ -85,6 +85,10 @@ use-debug = "warn"
 [lints.clippy.all]
 level = "warn"
 priority = -1
+
+[lints.clippy.incompatible-msrv]
+level = "allow"
+priority = 1
 
 [lints.clippy.nursery]
 level = "warn"

@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.21.3 (August 22, 2025)
+
+-  Fix: Forward `Override::<T>::from_expr` to `T::from_expr` [#371](https://github.com/TedDriggs/darling/issues/371)
+
+## v0.21.2 (August 14, 2025)
+
+-  Add `#[darling(from_expr = ...)]` when deriving `FromMeta` to support overriding the key-value form [#369](https://github.com/TedDriggs/darling/issues/369)
+-  Keep parsing the body and type params even if there are errors from parsing attributes. [#7](https://github.com/TedDriggs/darling/issues/7)
+-  Support `#[darling(with = ...)]` on the `generics` field when deriving `FromDeriveInput`.
+-  Return an error, rather than panicking, when doing shape validation on a `union`. [#365](https://github.com/TedDriggs/darling/issues/365)
+
+
+## v0.21.1 (August 4, 2025)
+
+-  Track all alternate field names, and show them in error message if there aren't too many. [#325](https://github.com/TedDriggs/darling/issues/325)
+-  Track all alternate values for enum variants, and show them in error messages if there aren't too many. [#362](https://github.com/TedDriggs/darling/issues/362)
+
+
+## v0.21.0 (July 10, 2025)
+
+-  Potentially breaking: Emit error when an attribute path is present in both `attributes` and `forward_attrs`. [#336](https://github.com/TedDriggs/darling/issues/336)
+-  Support parsing attributes which contain keywords [#238](https://github.com/TedDriggs/darling/issues/238)
+-  Add `SpannedValue::into_inner` [#342](https://github.com/TedDriggs/darling/issues/342)
+-  Add `#[darling(derive_syn_parse)]` to also impl `syn::parse::Parse` when deriving `FromMeta` [#285](https://github.com/TedDriggs/darling/issues/285)
+-  Make `impl FromMeta for syn::TypePath` support both quote-wrapped and bare values [#351](https://github.com/TedDriggs/darling/issues/351)
+-  Add `util::PreservedStrExpr` [#346](https://github.com/TedDriggs/darling/pull/346)
+-  Impl `UsesTypeParams` and `UsesLifetimes` for `WithOriginal` [#215](https://github.com/TedDriggs/darling/issues/215)
+-  Update error message emitted by `<() as FromMeta>::from_list` to allow use of `()` as a `#[darling(flatten)]` target [#353](https://github.com/TedDriggs/darling/issues/353)
+
+
 ## v0.20.11 (March 28, 2025)
 
 -   Support `#[darling(with = ...)]` on the `data` field when deriving `FromDeriveInput`. This allows the use of simpler receiver types, such as a `Vec` of enum variants.

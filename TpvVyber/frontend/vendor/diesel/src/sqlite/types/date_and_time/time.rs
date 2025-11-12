@@ -24,7 +24,6 @@ use crate::sqlite::Sqlite;
 /// since there is no format option to forgo the dot.
 /// We always print as many subsecond as his given to us,
 /// this means the subsecond part can be between 1 and 9 digits.
-///
 // the non-deprecated variant does not exist in our minimal supported version
 #[allow(deprecated)]
 const DATE_FORMAT: &[FormatItem<'_>] = format_description!("[year]-[month]-[day]");
@@ -303,11 +302,14 @@ mod tests {
     use crate::sql_types::{Text, Time, Timestamp, TimestamptzSqlite};
     use crate::test_helpers::connection;
 
-    define_sql_function!(fn datetime(x: Text) -> Timestamp);
-    define_sql_function!(fn time(x: Text) -> Time);
-    define_sql_function!(fn date(x: Text) -> Date);
+    #[declare_sql_function]
+    extern "SQL" {
+        fn datetime(x: Text) -> Timestamp;
+        fn time(x: Text) -> Time;
+        fn date(x: Text) -> Date;
+    }
 
-    #[test]
+    #[diesel_test_helper::test]
     fn unix_epoch_encodes_correctly() {
         let connection = &mut connection();
         let time = datetime!(1970-1-1 0:0:0);
@@ -315,7 +317,7 @@ mod tests {
         assert_eq!(Ok(true), query.get_result(connection));
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     fn unix_epoch_decodes_correctly_in_all_possible_formats() {
         let connection = &mut connection();
         let time = datetime!(1970-1-1 0:0:0);
@@ -364,13 +366,12 @@ mod tests {
         ];
 
         for s in valid_epoch_formats {
-            let epoch_from_sql =
-                select(sql::<Timestamp>(&format!("'{}'", s))).get_result(connection);
-            assert_eq!(Ok(time), epoch_from_sql, "format {} failed", s);
+            let epoch_from_sql = select(sql::<Timestamp>(&format!("'{s}'"))).get_result(connection);
+            assert_eq!(Ok(time), epoch_from_sql, "format {s} failed");
         }
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     fn times_relative_to_now_encode_correctly() {
         let connection = &mut connection();
         let time = naive_utc(OffsetDateTime::now_utc()) + Duration::seconds(60);
@@ -382,7 +383,7 @@ mod tests {
         assert_eq!(Ok(true), query.get_result(connection));
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     fn times_of_day_encode_correctly() {
         let connection = &mut connection();
 
@@ -399,7 +400,7 @@ mod tests {
         assert!(query.get_result::<bool>(connection).unwrap());
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     fn times_of_day_decode_correctly() {
         let connection = &mut connection();
         let midnight = NaiveTime::from_hms(0, 0, 0).unwrap();
@@ -426,12 +427,11 @@ mod tests {
             "00:00:00.000000-01:00",
         ];
         for format in valid_midnight_formats {
-            let query = select(sql::<Time>(&format!("'{}'", format)));
+            let query = select(sql::<Time>(&format!("'{format}'")));
             assert_eq!(
                 Ok(midnight),
                 query.get_result::<NaiveTime>(connection),
-                "format {} failed",
-                format
+                "format {format} failed"
             );
         }
 
@@ -447,7 +447,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     fn dates_encode_correctly() {
         let connection = &mut connection();
         let january_first_2000 = date!(2000 - 1 - 1);
@@ -467,7 +467,7 @@ mod tests {
         assert!(query.get_result::<bool>(connection).unwrap());
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     fn dates_decode_correctly() {
         let connection = &mut connection();
         let january_first_2000 = date!(2000 - 1 - 1);
@@ -496,7 +496,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     fn datetimes_decode_correctly() {
         let connection = &mut connection();
         let january_first_2000 = datetime!(2000-1-1 1:1:1);
@@ -528,7 +528,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     fn datetimes_encode_correctly() {
         let connection = &mut connection();
         let january_first_2000 = datetime!(2000-1-1 0:0:0);
@@ -548,7 +548,7 @@ mod tests {
         assert!(query.get_result::<bool>(connection).unwrap());
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     fn insert_timestamptz_into_table_as_text() {
         crate::table! {
             #[allow(unused_parens)]
@@ -585,7 +585,7 @@ mod tests {
         assert_eq!(result, time);
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     fn can_query_timestamptz_column_with_between() {
         crate::table! {
             #[allow(unused_parens)]
@@ -654,7 +654,7 @@ mod tests {
         assert_eq!(result, Ok(3));
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     fn unix_epoch_encodes_correctly_with_timezone() {
         let connection = &mut connection();
         // West one hour is negative offset
@@ -663,7 +663,7 @@ mod tests {
         assert!(query.get_result::<bool>(connection).unwrap());
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     fn unix_epoch_encodes_correctly_with_utc_timezone() {
         let connection = &mut connection();
         let time: OffsetDateTime = datetime!(1970-1-1 0:0:0.001 utc);
@@ -676,7 +676,7 @@ mod tests {
         assert!(query.get_result::<bool>(connection).unwrap());
     }
 
-    #[test]
+    #[diesel_test_helper::test]
     fn unix_epoch_decodes_correctly_with_utc_timezone_in_all_possible_formats() {
         let connection = &mut connection();
         let time: OffsetDateTime = datetime!(1970-1-1 0:0:0 utc);
@@ -702,8 +702,8 @@ mod tests {
 
         for s in valid_epoch_formats {
             let epoch_from_sql =
-                select(sql::<TimestamptzSqlite>(&format!("'{}'", s))).get_result(connection);
-            assert_eq!(Ok(time), epoch_from_sql, "format {} failed", s);
+                select(sql::<TimestamptzSqlite>(&format!("'{s}'"))).get_result(connection);
+            assert_eq!(Ok(time), epoch_from_sql, "format {s} failed");
         }
     }
 }

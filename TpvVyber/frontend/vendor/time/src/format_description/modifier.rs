@@ -1,6 +1,6 @@
 //! Various modifiers for components.
 
-use core::num::NonZeroU16;
+use core::num::NonZero;
 
 /// Day of the month.
 #[non_exhaustive]
@@ -256,14 +256,15 @@ pub enum Padding {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Ignore {
     /// The number of bytes to ignore.
-    pub count: NonZeroU16,
+    pub count: NonZero<u16>,
 }
 
 // Needed as `Default` is deliberately not implemented for `Ignore`. The number of bytes to ignore
 // must be explicitly provided.
 impl Ignore {
     /// Create an instance of `Ignore` with the provided number of bytes to ignore.
-    pub const fn count(count: NonZeroU16) -> Self {
+    #[inline]
+    pub const fn count(count: NonZero<u16>) -> Self {
         Self { count }
     }
 }
@@ -323,6 +324,7 @@ macro_rules! impl_const_default {
             if_pub! {
                 $($pub)?
                 $(#[$doc])*;
+                #[inline]
                 pub const fn default() -> Self {
                     $default
                 }
@@ -331,6 +333,7 @@ macro_rules! impl_const_default {
 
         $(#[$doc])*
         impl Default for $type {
+            #[inline]
             fn default() -> Self {
                 $default
             }

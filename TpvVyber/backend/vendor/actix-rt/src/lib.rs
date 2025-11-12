@@ -41,8 +41,6 @@
 //! Note that there are currently some unimplemented parts of using `actix-rt` with `io-uring`.
 //! In particular, when running a `System`, only `System::block_on` is supported.
 
-#![deny(rust_2018_idioms, nonstandard_style)]
-#![warn(future_incompatible, missing_docs)]
 #![allow(clippy::type_complexity)]
 #![doc(html_logo_url = "https://actix.rs/img/logo.png")]
 #![doc(html_favicon_url = "https://actix.rs/favicon.ico")]
@@ -63,6 +61,7 @@ mod arbiter;
 mod runtime;
 mod system;
 
+#[deprecated(since = "2.11.0", note = "Prefer `std::pin::pin!`.")]
 pub use tokio::pin;
 use tokio::task::JoinHandle;
 
@@ -89,10 +88,11 @@ pub mod net {
     use std::{
         future::Future,
         io,
+        pin::pin,
         task::{Context, Poll},
     };
 
-    use tokio::io::{AsyncRead, AsyncWrite, Interest};
+    use tokio::io::{AsyncRead, AsyncWrite, BufReader, Interest};
     #[cfg(unix)]
     pub use tokio::net::{UnixDatagram, UnixListener, UnixStream};
     pub use tokio::{
@@ -117,14 +117,12 @@ pub mod net {
     impl ActixStream for TcpStream {
         fn poll_read_ready(&self, cx: &mut Context<'_>) -> Poll<io::Result<Ready>> {
             let ready = self.ready(Interest::READABLE);
-            tokio::pin!(ready);
-            ready.poll(cx)
+            pin!(ready).poll(cx)
         }
 
         fn poll_write_ready(&self, cx: &mut Context<'_>) -> Poll<io::Result<Ready>> {
             let ready = self.ready(Interest::WRITABLE);
-            tokio::pin!(ready);
-            ready.poll(cx)
+            pin!(ready).poll(cx)
         }
     }
 
@@ -132,14 +130,12 @@ pub mod net {
     impl ActixStream for UnixStream {
         fn poll_read_ready(&self, cx: &mut Context<'_>) -> Poll<io::Result<Ready>> {
             let ready = self.ready(Interest::READABLE);
-            tokio::pin!(ready);
-            ready.poll(cx)
+            pin!(ready).poll(cx)
         }
 
         fn poll_write_ready(&self, cx: &mut Context<'_>) -> Poll<io::Result<Ready>> {
             let ready = self.ready(Interest::WRITABLE);
-            tokio::pin!(ready);
-            ready.poll(cx)
+            pin!(ready).poll(cx)
         }
     }
 
@@ -150,6 +146,16 @@ pub mod net {
 
         fn poll_write_ready(&self, cx: &mut Context<'_>) -> Poll<io::Result<Ready>> {
             (**self).poll_write_ready(cx)
+        }
+    }
+
+    impl<Io: ActixStream> ActixStream for BufReader<Io> {
+        fn poll_read_ready(&self, cx: &mut Context<'_>) -> Poll<io::Result<Ready>> {
+            self.get_ref().poll_read_ready(cx)
+        }
+
+        fn poll_write_ready(&self, cx: &mut Context<'_>) -> Poll<io::Result<Ready>> {
+            self.get_ref().poll_write_ready(cx)
         }
     }
 }

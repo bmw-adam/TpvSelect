@@ -12,11 +12,17 @@
 [package]
 edition = "2021"
 name = "actix-files"
-version = "0.6.6"
+version = "0.6.8"
 authors = [
     "Nikolay Kim <fafhrd91@gmail.com>",
     "Rob Ede <robjtede@icloud.com>",
 ]
+build = false
+autolib = false
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
 description = "Static file serving for Actix Web"
 homepage = "https://actix.rs"
 readme = "README.md"
@@ -33,9 +39,40 @@ categories = [
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/actix/actix-web"
 
+[package.metadata.cargo_check_external_types]
+allowed_external_types = [
+    "actix_http::*",
+    "actix_service::*",
+    "actix_web::*",
+    "http::*",
+    "mime::*",
+]
+
+[features]
+experimental-io-uring = [
+    "actix-web/experimental-io-uring",
+    "tokio-uring",
+]
+
 [lib]
 name = "actix_files"
 path = "src/lib.rs"
+
+[[example]]
+name = "guarded-listing"
+path = "examples/guarded-listing.rs"
+
+[[test]]
+name = "encoding"
+path = "tests/encoding.rs"
+
+[[test]]
+name = "guard"
+path = "tests/guard.rs"
+
+[[test]]
+name = "traversal"
+path = "tests/traversal.rs"
 
 [dependencies.actix-http]
 version = "3"
@@ -57,7 +94,12 @@ version = "2"
 version = "1"
 
 [dependencies.derive_more]
-version = "0.99.5"
+version = "2"
+features = [
+    "display",
+    "error",
+    "from",
+]
 
 [dependencies.futures-core]
 version = "0.3.17"
@@ -100,17 +142,25 @@ version = "0.11"
 [dev-dependencies.tempfile]
 version = "3.2"
 
-[features]
-experimental-io-uring = [
-    "actix-web/experimental-io-uring",
-    "tokio-uring",
-]
-
-[target."cfg(target_os = \"linux\")".dependencies.actix-server]
+[target.'cfg(target_os = "linux")'.dependencies.actix-server]
 version = "2.4"
 optional = true
 
-[target."cfg(target_os = \"linux\")".dependencies.tokio-uring]
+[target.'cfg(target_os = "linux")'.dependencies.tokio-uring]
 version = "0.5"
 features = ["bytes"]
 optional = true
+
+[lints.clippy]
+
+[lints.rust.future_incompatible]
+level = "deny"
+priority = 0
+
+[lints.rust.nonstandard_style]
+level = "deny"
+priority = 0
+
+[lints.rust.rust_2018_idioms]
+level = "deny"
+priority = 0

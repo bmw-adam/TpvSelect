@@ -1,6 +1,6 @@
 [package]
 name = "chrono"
-version = "0.4.40"
+version = "0.4.42"
 description = "Date and time library for Rust"
 homepage = "https://github.com/chronotope/chrono"
 documentation = "https://docs.rs/chrono/"
@@ -11,7 +11,7 @@ readme = "README.md"
 license = "MIT OR Apache-2.0"
 include = ["src/*", "tests/*.rs", "LICENSE.txt", "CITATION.cff"]
 edition = "2021"
-rust-version = "1.61.0"
+rust-version = "1.62.0"
 
 [lib]
 name = "chrono"
@@ -23,8 +23,9 @@ alloc = []
 libc = []
 winapi = ["windows-link"]
 std = ["alloc"]
-clock = ["winapi", "iana-time-zone", "android-tzdata", "now"]
+clock = ["winapi", "iana-time-zone", "now"]
 now = ["std"]
+core-error = []
 oldtime = []
 wasmbind = ["wasm-bindgen", "js-sys"]
 unstable-locales = ["pure-rust-locales"]
@@ -49,16 +50,13 @@ wasm-bindgen = { version = "0.2", optional = true }
 js-sys = { version = "0.3", optional = true }       # contains FFI bindings for the JS Date API
 
 [target.'cfg(windows)'.dependencies]
-windows-link = { version = "0.1", optional = true }
+windows-link = { version = "0.2", optional = true }
 
 [target.'cfg(windows)'.dev-dependencies]
-windows-bindgen = { version = "0.60" } # MSRV is 1.74
+windows-bindgen = { version = "0.63" } # MSRV is 1.74
 
 [target.'cfg(unix)'.dependencies]
 iana-time-zone = { version = "0.1.45", optional = true, features = ["fallback"] }
-
-[target.'cfg(target_os = "android")'.dependencies]
-android-tzdata = { version = "0.1.1", optional = true }
 
 [dev-dependencies]
 serde_json = { version = "1" }

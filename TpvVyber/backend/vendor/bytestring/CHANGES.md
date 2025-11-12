@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 1.5.0
+
+- Migrate `serde` dependency to `serde_core`.
+- Minimum supported Rust version (MSRV) is now 1.75.
+- Switch `serde` to `serde_core`
+
 ## 1.4.0
 
 - Add `ByteString::split_at()` method.

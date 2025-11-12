@@ -11,21 +11,31 @@
 
 [package]
 edition = "2021"
-rust-version = "1.78.0"
+rust-version = "1.86.0"
 name = "diesel_table_macro_syntax"
-version = "0.2.0"
+version = "0.3.0"
+build = false
 include = [
     "src/**/*.rs",
     "tests/**/*.rs",
     "LICENSE-*",
     "README.md",
 ]
+autolib = false
+autobins = false
+autoexamples = false
 autotests = false
+autobenches = false
 description = "Internal diesel crate"
 homepage = "https://diesel.rs"
 documentation = "https://diesel.rs/guides/"
+readme = false
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/diesel-rs/diesel/"
+
+[lib]
+name = "diesel_table_macro_syntax"
+path = "src/lib.rs"
 
 [dependencies.syn]
 version = "2"

@@ -11,9 +11,9 @@
 
 [package]
 edition = "2021"
-rust-version = "1.67.1"
+rust-version = "1.81.0"
 name = "time-core"
-version = "0.1.4"
+version = "0.1.6"
 authors = [
     "Jacob Pratt <open-source@jhpratt.dev>",
     "Time contributors",
@@ -47,6 +47,7 @@ path = "src/lib.rs"
 
 [lints.clippy]
 alloc-instead-of-core = "deny"
+as-underscore = "warn"
 dbg-macro = "warn"
 decimal-literal-representation = "warn"
 explicit-auto-deref = "warn"
@@ -70,6 +71,10 @@ use-debug = "warn"
 [lints.clippy.all]
 level = "warn"
 priority = -1
+
+[lints.clippy.incompatible-msrv]
+level = "allow"
+priority = 1
 
 [lints.clippy.nursery]
 level = "warn"
